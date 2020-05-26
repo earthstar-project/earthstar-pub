@@ -1,7 +1,11 @@
 {
-  "name": "keywing-pub-demo",
+  "name": "keywing-pub",
   "version": "0.0.2",
   "description": "Host Keywing workspaces via HTTP",
+  "repository": {
+    "type": "git",
+    "url": "git+ssh://git@github.com/cinnamon-bun/keywing-pub.git"
+  },
   "main": "./build/index.js",
   "bin": {
     "keywing-pub": "./build/index.js"
