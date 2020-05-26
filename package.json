@@ -1,6 +1,6 @@
 {
   "name": "keywing-pub-demo",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "Host Keywing workspaces via HTTP",
   "main": "./build/index.js",
   "bin": {
