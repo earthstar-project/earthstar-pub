@@ -8,46 +8,54 @@ import {
     Item,
 } from 'keywing';
 import 'fs';
-import { appendFile } from 'fs';
+import { appendFile, lchown } from 'fs';
 
 //================================================================================
 // KEYWING SETUP
 
-let workspace = 'test';
-let kw = new StoreMemory([ValidatorKw1], workspace);
-//let keypair : Keypair = keywing.generateKeypair();
-let keypair : Keypair = {
+let demoWorkspace = 'test';
+let demoKw = new StoreMemory([ValidatorKw1], demoWorkspace);
+let demoKeypair : Keypair = {
     public: 'Ki6aDqWS5O5pQlmrQWv2kT97abIWCC0wqbMrwoqoZq0=',
     secret: 'VSdYKDZzl2A4Cm7AW5GGgGWv3MtNKszf7bOcvgW/LRo='
 }
-let author = keywing.addSigilToKey(keypair.public);
+let demoAuthor = keywing.addSigilToKey(demoKeypair.public);
 
-/*
-kw.set({
+demoKw.set({
     format: 'kw.1',
     key: 'wiki/kittens',
-    value: 'Kittens are small mammals.',
-    author: author,
-    authorSecret: keypair.secret,
+    value: 'Kittens are small mammals',
+    author: demoAuthor,
+    authorSecret: demoKeypair.secret,
 });
-*/
-kw.set({
+demoKw.set({
     format: 'kw.1',
-    key: `~${author}/about/name`,
+    key: 'wiki/puppies',
+    value: 'Puppies go bark bark',
+    author: demoAuthor,
+    authorSecret: demoKeypair.secret,
+});
+demoKw.set({
+    format: 'kw.1',
+    key: `~${demoAuthor}/about/name`,
     value: 'Example Sam',
-    author: author,
-    authorSecret: keypair.secret,
-});
-kw.set({
-    format: 'kw.1',
-    key: `~${author}/about/details`,
-    value: 'I am an example author',
-    author: author,
-    authorSecret: keypair.secret,
+    author: demoAuthor,
+    authorSecret: demoKeypair.secret,
 });
 
 //================================================================================
 // VIEWS
+
+// from https://stackoverflow.com/questions/40263803/native-javascript-or-es6-way-to-encode-and-decode-html-entities
+// escape HTML-related characters
+let safe = (str : string) =>
+    str.replace(/[&<>'"]/g, (tag) => (({
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        "'": '&#39;',
+        '"': '&quot;'
+    } as any)[tag]));
 
 let htmlWrapper = (page : string) : string => 
     `<html>
@@ -63,13 +71,20 @@ let htmlWrapper = (page : string) : string =>
                 font-family: sans-serif;
                 color: #222;
                 background: white;
+                padding: 10px;
             }
             code {
                 background: #e8f9dc;
-                padding: 5px;
+                padding: 4px 7px;
+                margin: 2px;
                 border-radius: 3px;
                 border: 1px solid #888;
                 display: inline-block;
+                word-break: break-all;
+                font-size: 16px;
+            }
+            a code {
+                text-decoration: underline;
             }
         </style>
     <body>
@@ -77,59 +92,107 @@ let htmlWrapper = (page : string) : string =>
     </body>
     </html>`
 
-let apiDocs = `
-    <h2>HTTP API</h2>
+let apiDocs = (workspace : string) =>
+    `<h2>HTTP API</h2>
     <ul>
-        <li>GET <a href="/api/items"><code>/api/keys</code></a> - list all keys</li>
-        <li>GET <a href="/api/items"><code>/api/items</code></a> - list all items (including history)</li>
-        <li>POST <a href="/api/items"><code>/api/items</code></a> - upload items (supply as a JSON array)</li>
+        <li>GET  <a href="/workspace/${workspace}/api/keys"><code>/workspace/:workspace/api/keys</code></a> - list all keys</li>
+        <li>GET  <a href="/workspace/${workspace}/api/items"><code>/workspace/:workspace/api/items</code></a> - list all items (including history)</li>
+        <li>POST <code>/workspace/:workspace/api/items</code> - upload items (supply as a JSON array)</li>
     </ul>`;
 
 let storeTable = (kw : IStore) : string =>
-    `<h2>Store contents</h2>
-    <table>
+    `<table>
         <tr>
             <th>Key</th>
             <th>Value</th>
         </tr>
         ${kw.items().map(item =>
             `<tr>
-                <td><code>${item.key}</code></td>
-                <td>${item.value}</td>
+                <td><code>${safe(item.key)}</code></td>
+                <td><code>${safe(item.value)}</code></td>
             </tr>`).join('\n')}
     </table>`;
 
-let indexPage = (kw : IStore) : string =>
+let workspaceOverview = (kw : IStore) : string =>
     htmlWrapper(
-        `<h1>Keywing</h1>
-        <p>This is an example pub server.  It's hosting a Keywing database (on the server) with these hardcoded details:</p>
-        <blockquote>
-            <p>Workspace: <code>${workspace}</code><br/></p>
-            <p>Author pubkey: <code>${author}</code></p>
-            <p>Author secret: <code>${keypair.secret}</code></p>
-        </blockquote>
+        `<p><a href="/">&larr; Home</a></p>
+        <h2>Workspace: <code>${safe(kw.workspace)}</code></h2>
         <hr />
         ${storeTable(kw)}
         <hr />
-        ${apiDocs}
+        ${apiDocs(kw.workspace)}
         `
     );
+    /*
+        <p>Example author:</p>
+        <blockquote>
+            <p>pubkey: <code>${safe(demoAuthor)}</code></p>
+            <p>secret: <code>${safe(demoKeypair.secret)}</code></p>
+        </blockquote>
+        <hr />
+    */
+
+let indexPage = (workspaces : string[]) : string =>
+    htmlWrapper(
+        `<h1>Keywing Pub</h1>
+        <p>This is a demo pub hosting the following workspaces:</p>
+        <ul>
+        ${workspaces.map(ws =>
+            `<li><a href="/workspace/${safe(ws)}"><code>${safe(ws)}</code></a></li>`
+        ).join('\n')}
+        </ul>
+        <hr/>
+        <p><small><a href="https://github.com/cinnamon-bun/keywing">Keywing on Github</a></small></p>
+        `
+    );
+
 
 //================================================================================
 // EXPRESS
 
+let makeNewWorkspacesOnDemand = true;
+
+let workspaceToStore : {[ws : string] : IStore} = {};
+
+// add our test store from above
+workspaceToStore[demoWorkspace] = demoKw;
+
+let obtainKw = (workspace : string) : IStore | undefined => {
+    let kw = workspaceToStore[workspace];
+    if (kw !== undefined) { return kw; }
+    if (makeNewWorkspacesOnDemand) {
+        kw = new StoreMemory([ValidatorKw1], workspace);
+        workspaceToStore[workspace] = kw;
+        return kw;
+    } 
+    return undefined;
+}
+
 let app = express();
 let port = 3333;
 app.get('/', (req, res) => {
-    res.send(indexPage(kw));
+    let workspaces = Object.keys(workspaceToStore);
+    workspaces.sort();
+    res.send(indexPage(workspaces));
 });
-app.get('/api/keys', (req, res) => {
+app.get('/workspace/:workspace', (req, res) => {
+    let kw = obtainKw(req.params.workspace);
+    if (kw === undefined) { res.sendStatus(404); return; };
+    res.send(workspaceOverview(kw));
+});
+app.get('/workspace/:workspace/api/keys', (req, res) => {
+    let kw = obtainKw(req.params.workspace);
+    if (kw === undefined) { res.sendStatus(404); return; };
     res.json(kw.keys());
 });
-app.get('/api/items', (req, res) => {
+app.get('/workspace/:workspace/api/items', (req, res) => {
+    let kw = obtainKw(req.params.workspace);
+    if (kw === undefined) { res.sendStatus(404); return; };
     res.json(kw.items({ includeHistory: true }));
 });
-app.post('/api/items', express.json({type: '*/*'}), (req, res) => {
+app.post('/workspace/:workspace/api/items', express.json({type: '*/*'}), (req, res) => {
+    let kw = obtainKw(req.params.workspace);
+    if (kw === undefined) { res.sendStatus(404); return; };
     let items : Item[] = req.body;
     let numIngested = 0;
     for (let item of items) {
