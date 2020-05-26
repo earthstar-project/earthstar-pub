@@ -1,5 +1,5 @@
 {
-  "name": "testing",
+  "name": "keywing-pub-demo",
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
@@ -20,7 +20,7 @@
   },
   "dependencies": {
     "express": "^4.17.1",
-    "keywing": "^0.4.0",
+    "keywing": "^0.4.1",
     "tslib": "^2.0.0"
   }
 }
