@@ -1,3 +1,5 @@
+#!/usr/bin/env node
+
 import express = require('express');
 import * as keywing from 'keywing';
 import {
@@ -8,12 +10,11 @@ import {
     Item,
 } from 'keywing';
 import 'fs';
-import { appendFile, lchown } from 'fs';
 
 //================================================================================
 // KEYWING SETUP
 
-let demoWorkspace = 'test';
+let demoWorkspace = 'demo';
 let demoKw = new StoreMemory([ValidatorKw1], demoWorkspace);
 let demoKeypair : Keypair = {
     public: 'Ki6aDqWS5O5pQlmrQWv2kT97abIWCC0wqbMrwoqoZq0=',
