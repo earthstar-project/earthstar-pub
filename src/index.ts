@@ -105,8 +105,8 @@ let htmlWrapper = (page : string) : string =>
 let apiDocs = (workspace : string) =>
     `<h2>HTTP API</h2>
     <ul>
-        <li>GET  <a href="/workspace/${workspace}/api/keys"><code>/workspace/:workspace/api/keys</code></a> - list all keys</li>
-        <li>GET  <a href="/workspace/${workspace}/api/items"><code>/workspace/:workspace/api/items</code></a> - list all items (including history)</li>
+        <li>GET  <a href="/keywing/api/${workspace}/keys"><code>/workspace/:workspace/api/keys</code></a> - list all keys</li>
+        <li>GET  <a href="/keywing/api/${workspace}/items"><code>/workspace/:workspace/api/items</code></a> - list all items (including history)</li>
         <li>POST <code>/workspace/:workspace/api/items</code> - upload items (supply as a JSON array)</li>
     </ul>`;
 
@@ -197,17 +197,17 @@ app.get('/workspace/:workspace', (req, res) => {
     if (kw === undefined) { res.sendStatus(404); return; };
     res.send(workspaceOverview(kw));
 });
-app.get('/workspace/:workspace/api/keys', (req, res) => {
+app.get('/keywing/api/:workspace/keys', (req, res) => {
     let kw = obtainKw(req.params.workspace);
     if (kw === undefined) { res.sendStatus(404); return; };
     res.json(kw.keys());
 });
-app.get('/workspace/:workspace/api/items', (req, res) => {
+app.get('/keywing/api/:workspace/items', (req, res) => {
     let kw = obtainKw(req.params.workspace);
     if (kw === undefined) { res.sendStatus(404); return; };
     res.json(kw.items({ includeHistory: true }));
 });
-app.post('/workspace/:workspace/api/items', express.json({type: '*/*'}), (req, res) => {
+app.post('/keywing/api/:workspace/items', express.json({type: '*/*'}), (req, res) => {
     let kw = obtainKw(req.params.workspace);
     if (kw === undefined) { res.sendStatus(404); return; };
     let items : Item[] = req.body;
