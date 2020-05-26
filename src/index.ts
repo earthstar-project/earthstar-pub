@@ -83,6 +83,16 @@ let htmlWrapper = (page : string) : string =>
                 word-break: break-all;
                 font-size: 16px;
             }
+            td { vertical-align: top; }
+            pre {
+                background: #f9eadc;
+                padding: 4px 7px;
+                margin: 2px;
+                border-radius: 3px;
+                border: 1px solid #888;
+                word-break: break-all;
+                white-space: pre-wrap;
+            }
             a code {
                 text-decoration: underline;
             }
@@ -108,7 +118,14 @@ let storeTable = (kw : IStore) : string =>
         </tr>
         ${kw.items().map(item =>
             `<tr>
-                <td><code>${safe(item.key)}</code></td>
+                <td>
+                    <details>
+                        <summary>
+                            <code>${safe(item.key)}</code>
+                        </summary>
+                        <pre>${JSON.stringify(item, null, 2)}</pre>
+                    </details>
+                </td>
                 <td><code>${safe(item.value)}</code></td>
             </tr>`).join('\n')}
     </table>`;
