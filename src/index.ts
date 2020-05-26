@@ -102,11 +102,11 @@ let storeTable = (kw : IStore) : string =>
 let indexPage = (kw : IStore) : string =>
     htmlWrapper(
         `<h1>Keywing</h1>
-        <p>This example pub is running with these hardcoded details:</p>
+        <p>This is an example pub server.  It's hosting a Keywing database (on the server) with these hardcoded details:</p>
         <blockquote>
-        <p>Workspace: <code>${workspace}</code><br/></p>
-        <p>Author pubkey: <code>${author}</code></p>
-        <p>Author secret: <code>${keypair.secret}</code></p>
+            <p>Workspace: <code>${workspace}</code><br/></p>
+            <p>Author pubkey: <code>${author}</code></p>
+            <p>Author secret: <code>${keypair.secret}</code></p>
         </blockquote>
         <hr />
         ${storeTable(kw)}
