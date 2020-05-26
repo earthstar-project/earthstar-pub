@@ -167,17 +167,17 @@ let indexPage = (workspaces : string[]) : string =>
 //================================================================================
 // EXPRESS
 
-let makeNewWorkspacesOnDemand = true;
+let ALLOW_PUSH_TO_NEW_WORKSPACES = true;
 
 let workspaceToStore : {[ws : string] : IStore} = {};
 
 // add our test store from above
 workspaceToStore[demoWorkspace] = demoKw;
 
-let obtainKw = (workspace : string) : IStore | undefined => {
+let obtainStore = (workspace : string, createOnDemand : boolean) : IStore | undefined => {
     let kw = workspaceToStore[workspace];
     if (kw !== undefined) { return kw; }
-    if (makeNewWorkspacesOnDemand) {
+    if (createOnDemand) {
         kw = new StoreMemory([ValidatorKw1], workspace);
         workspaceToStore[workspace] = kw;
         return kw;
@@ -193,22 +193,22 @@ app.get('/', (req, res) => {
     res.send(indexPage(workspaces));
 });
 app.get('/keywing/:workspace', (req, res) => {
-    let kw = obtainKw(req.params.workspace);
+    let kw = obtainStore(req.params.workspace, false);
     if (kw === undefined) { res.sendStatus(404); return; };
     res.send(workspaceOverview(kw));
 });
 app.get('/keywing/:workspace/keys', (req, res) => {
-    let kw = obtainKw(req.params.workspace);
+    let kw = obtainStore(req.params.workspace, false);
     if (kw === undefined) { res.sendStatus(404); return; };
     res.json(kw.keys());
 });
 app.get('/keywing/:workspace/items', (req, res) => {
-    let kw = obtainKw(req.params.workspace);
+    let kw = obtainStore(req.params.workspace, false);
     if (kw === undefined) { res.sendStatus(404); return; };
     res.json(kw.items({ includeHistory: true }));
 });
 app.post('/keywing/:workspace/items', express.json({type: '*/*'}), (req, res) => {
-    let kw = obtainKw(req.params.workspace);
+    let kw = obtainStore(req.params.workspace, ALLOW_PUSH_TO_NEW_WORKSPACES);
     if (kw === undefined) { res.sendStatus(404); return; };
     let items : Item[] = req.body;
     let numIngested = 0;
