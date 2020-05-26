@@ -14,10 +14,13 @@
   "license": "ISC",
   "devDependencies": {
     "@types/better-sqlite3": "^5.4.0",
+    "@types/express": "^4.17.6",
     "@types/node": "^14.0.5",
     "typescript": "^3.9.3"
   },
   "dependencies": {
-    "keywing": "^0.4.0"
+    "express": "^4.17.1",
+    "keywing": "^0.4.0",
+    "tslib": "^2.0.0"
   }
 }
