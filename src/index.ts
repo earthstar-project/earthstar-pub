@@ -105,9 +105,9 @@ let htmlWrapper = (page : string) : string =>
 let apiDocs = (workspace : string) =>
     `<h2>HTTP API</h2>
     <ul>
-        <li>GET  <a href="/keywing/api/${workspace}/keys"><code>/workspace/:workspace/api/keys</code></a> - list all keys</li>
-        <li>GET  <a href="/keywing/api/${workspace}/items"><code>/workspace/:workspace/api/items</code></a> - list all items (including history)</li>
-        <li>POST <code>/workspace/:workspace/api/items</code> - upload items (supply as a JSON array)</li>
+        <li>GET  <a href="/keywing/${workspace}/keys"><code>/workspace/:workspace/keys</code></a> - list all keys</li>
+        <li>GET  <a href="/keywing/${workspace}/items"><code>/workspace/:workspace/items</code></a> - list all items (including history)</li>
+        <li>POST <code>/workspace/:workspace/items</code> - upload items (supply as a JSON array)</li>
     </ul>`;
 
 let storeTable = (kw : IStore) : string =>
@@ -155,7 +155,7 @@ let indexPage = (workspaces : string[]) : string =>
         <p>This is a demo pub hosting the following workspaces:</p>
         <ul>
         ${workspaces.map(ws =>
-            `<li><a href="/workspace/${safe(ws)}"><code>${safe(ws)}</code></a></li>`
+            `<li><a href="/keywing/${safe(ws)}"><code>${safe(ws)}</code></a></li>`
         ).join('\n')}
         </ul>
         <hr/>
@@ -192,22 +192,22 @@ app.get('/', (req, res) => {
     workspaces.sort();
     res.send(indexPage(workspaces));
 });
-app.get('/workspace/:workspace', (req, res) => {
+app.get('/keywing/:workspace', (req, res) => {
     let kw = obtainKw(req.params.workspace);
     if (kw === undefined) { res.sendStatus(404); return; };
     res.send(workspaceOverview(kw));
 });
-app.get('/keywing/api/:workspace/keys', (req, res) => {
+app.get('/keywing/:workspace/keys', (req, res) => {
     let kw = obtainKw(req.params.workspace);
     if (kw === undefined) { res.sendStatus(404); return; };
     res.json(kw.keys());
 });
-app.get('/keywing/api/:workspace/items', (req, res) => {
+app.get('/keywing/:workspace/items', (req, res) => {
     let kw = obtainKw(req.params.workspace);
     if (kw === undefined) { res.sendStatus(404); return; };
     res.json(kw.items({ includeHistory: true }));
 });
-app.post('/keywing/api/:workspace/items', express.json({type: '*/*'}), (req, res) => {
+app.post('/keywing/:workspace/items', express.json({type: '*/*'}), (req, res) => {
     let kw = obtainKw(req.params.workspace);
     if (kw === undefined) { res.sendStatus(404); return; };
     let items : Item[] = req.body;
