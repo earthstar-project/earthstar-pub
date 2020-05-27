@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 
 import 'fs';
+import commander = require('commander');
 import express = require('express');
 import cors = require('cors');
 import * as earthstar from 'earthstar';
@@ -11,6 +12,7 @@ import {
     Keypair,
     Item,
 } from 'earthstar';
+import { ALL } from 'dns';
 
 //================================================================================
 // EARTHSTAR SETUP
@@ -167,10 +169,28 @@ let indexPage = (workspaces : string[]) : string =>
 
 
 //================================================================================
+// COMMAND LINE
+
+let program = new commander.Command();
+program
+    .name('earthstar-pub')
+    .description('Run an HTTP server which hosts and replicates Earthstar workspaces.')
+    .option('-p, --port <port>', 'which port to serve on', '3333')
+    .option('--readonly', "don't accept any pushed data from users", false)
+    .option('-c, --closed', "accept data to existing workspaces but don't create new workspaces.", false);
+    //.option('-d, --dbfile <filename>', 'filename for sqlite database.  if omitted, data is only kept in memory')
+
+program.parse(process.argv);
+
+let PORT : number = +program.port;
+//let DBFILE : string | undefined = program.dbfile;
+let READONLY : boolean = program.readonly;
+let ALLOW_PUSH_TO_NEW_WORKSPACES : boolean = !(program.closed || READONLY);
+
+//================================================================================
 // EXPRESS
 
-let ALLOW_PUSH_TO_NEW_WORKSPACES = true;
-
+// a structure to hold our Earthstar stores
 let workspaceToStore : {[ws : string] : IStore} = {};
 
 // add our test store from above
@@ -190,7 +210,6 @@ let obtainStore = (workspace : string, createOnDemand : boolean) : IStore | unde
 let app = express();
 app.use(cors());
 
-let port = 3333;
 app.get('/', (req, res) => {
     let workspaces = Object.keys(workspaceToStore);
     workspaces.sort();
@@ -212,6 +231,7 @@ app.get('/earthstar/:workspace/items', (req, res) => {
     res.json(kw.items({ includeHistory: true }));
 });
 app.post('/earthstar/:workspace/items', express.json({type: '*/*'}), (req, res) => {
+    if (READONLY) { res.sendStatus(403); return; }
     let kw = obtainStore(req.params.workspace, ALLOW_PUSH_TO_NEW_WORKSPACES);
     if (kw === undefined) { res.sendStatus(404); return; };
     let items : Item[] = req.body;
@@ -226,4 +246,4 @@ app.post('/earthstar/:workspace/items', express.json({type: '*/*'}), (req, res) 
     });
 });
 
-app.listen(port, () => console.log(`Listening on http://localhost:${port}`));
+app.listen(PORT, () => console.log(`Listening on http://localhost:${PORT}`));
