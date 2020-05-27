@@ -155,13 +155,20 @@ let workspaceOverview = (kw : IStore) : string =>
 
 let indexPage = (workspaces : string[]) : string =>
     htmlWrapper(
-        `<h1>Earthstar Pub</h1>
+        `<p><img src="/img/earthstar-logo-only.png" alt="earthstar logo" width=127 height=129 /></p>
+        <h1>Earthstar Pub</h1>
         <p>This is a demo pub hosting the following workspaces:</p>
         <ul>
         ${workspaces.map(ws =>
             `<li><a href="/earthstar/${safe(ws)}"><code>${safe(ws)}</code></a></li>`
         ).join('\n')}
         </ul>
+        <h2>How to use</h2>
+        <p>You can sync with this pub using <a href="https://github.com/cinnamon-bun/earthstar-cli">earthstar-cli</a>.</p>
+        <p>First create a local database with the same workspace name:</p>
+        <p><code>$ earthstar create localfile.sqlite demo</code></p>
+        Then you can sync:
+        <p><code>$ earthstar sync localfile.sqlite http://localhost:3333/earthstar/</code></p>
         <hr/>
         <p><small><a href="https://github.com/cinnamon-bun/earthstar">Earthstar on Github</a></small></p>
         `
@@ -209,6 +216,8 @@ let obtainStore = (workspace : string, createOnDemand : boolean) : IStore | unde
 
 let app = express();
 app.use(cors());
+
+app.use(express.static('public'));
 
 app.get('/', (req, res) => {
     let workspaces = Object.keys(workspaceToStore);
