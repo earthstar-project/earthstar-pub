@@ -7,40 +7,39 @@ import cors = require('cors');
 import * as earthstar from 'earthstar';
 import {
     StoreMemory,
-    ValidatorKw1,
+    ValidatorEs1,
     IStore,
     Keypair,
     Item,
 } from 'earthstar';
-import { ALL } from 'dns';
 
 //================================================================================
 // EARTHSTAR SETUP
 
 let demoWorkspace = 'demo';
-let demoKw = new StoreMemory([ValidatorKw1], demoWorkspace);
+let demoEs = new StoreMemory([ValidatorEs1], demoWorkspace);
 let demoKeypair : Keypair = {
     public: 'Ki6aDqWS5O5pQlmrQWv2kT97abIWCC0wqbMrwoqoZq0=',
     secret: 'VSdYKDZzl2A4Cm7AW5GGgGWv3MtNKszf7bOcvgW/LRo='
 }
 let demoAuthor = earthstar.addSigilToKey(demoKeypair.public);
 
-demoKw.set({
-    format: 'kw.1',
+demoEs.set({
+    format: 'es.1',
     key: 'wiki/kittens',
     value: 'Kittens are small mammals',
     author: demoAuthor,
     authorSecret: demoKeypair.secret,
 });
-demoKw.set({
-    format: 'kw.1',
+demoEs.set({
+    format: 'es.1',
     key: 'wiki/puppies',
     value: 'Puppies go bark bark',
     author: demoAuthor,
     authorSecret: demoKeypair.secret,
 });
-demoKw.set({
-    format: 'kw.1',
+demoEs.set({
+    format: 'es.1',
     key: `~${demoAuthor}/about/name`,
     value: 'Example Sam',
     author: demoAuthor,
@@ -64,7 +63,7 @@ let safe = (str : string) =>
 let htmlWrapper = (page : string) : string => 
     `<html>
     <head>
-        <title>Earthstar Pub</title>
+        <title>🌎⭐️ Earthstar Pub</title>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no">
         <style>
@@ -201,13 +200,13 @@ let ALLOW_PUSH_TO_NEW_WORKSPACES : boolean = !(program.closed || READONLY);
 let workspaceToStore : {[ws : string] : IStore} = {};
 
 // add our test store from above
-workspaceToStore[demoWorkspace] = demoKw;
+workspaceToStore[demoWorkspace] = demoEs;
 
 let obtainStore = (workspace : string, createOnDemand : boolean) : IStore | undefined => {
     let kw = workspaceToStore[workspace];
     if (kw !== undefined) { return kw; }
     if (createOnDemand) {
-        kw = new StoreMemory([ValidatorKw1], workspace);
+        kw = new StoreMemory([ValidatorEs1], workspace);
         workspaceToStore[workspace] = kw;
         return kw;
     } 
