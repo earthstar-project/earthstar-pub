@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 
+import 'fs';
 import express = require('express');
 import * as earthstar from 'earthstar';
 import {
@@ -9,10 +10,9 @@ import {
     Keypair,
     Item,
 } from 'earthstar';
-import 'fs';
 
 //================================================================================
-// KEYWING SETUP
+// EARTHSTAR SETUP
 
 let demoWorkspace = 'demo';
 let demoKw = new StoreMemory([ValidatorKw1], demoWorkspace);
@@ -61,7 +61,7 @@ let safe = (str : string) =>
 let htmlWrapper = (page : string) : string => 
     `<html>
     <head>
-        <title>Keywing demo</title>
+        <title>Earthstar Pub</title>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no">
         <style>
@@ -106,8 +106,8 @@ let htmlWrapper = (page : string) : string =>
 let apiDocs = (workspace : string) =>
     `<h2>HTTP API</h2>
     <ul>
-        <li>GET  <a href="/keywing/${workspace}/keys"><code>/workspace/:workspace/keys</code></a> - list all keys</li>
-        <li>GET  <a href="/keywing/${workspace}/items"><code>/workspace/:workspace/items</code></a> - list all items (including history)</li>
+        <li>GET  <a href="/earthstar/${workspace}/keys"><code>/workspace/:workspace/keys</code></a> - list all keys</li>
+        <li>GET  <a href="/earthstar/${workspace}/items"><code>/workspace/:workspace/items</code></a> - list all items (including history)</li>
         <li>POST <code>/workspace/:workspace/items</code> - upload items (supply as a JSON array)</li>
     </ul>`;
 
@@ -152,15 +152,15 @@ let workspaceOverview = (kw : IStore) : string =>
 
 let indexPage = (workspaces : string[]) : string =>
     htmlWrapper(
-        `<h1>Keywing Pub</h1>
+        `<h1>Earthstar Pub</h1>
         <p>This is a demo pub hosting the following workspaces:</p>
         <ul>
         ${workspaces.map(ws =>
-            `<li><a href="/keywing/${safe(ws)}"><code>${safe(ws)}</code></a></li>`
+            `<li><a href="/earthstar/${safe(ws)}"><code>${safe(ws)}</code></a></li>`
         ).join('\n')}
         </ul>
         <hr/>
-        <p><small><a href="https://github.com/cinnamon-bun/keywing">Keywing on Github</a></small></p>
+        <p><small><a href="https://github.com/cinnamon-bun/earthstar">Earthstar on Github</a></small></p>
         `
     );
 
@@ -193,22 +193,22 @@ app.get('/', (req, res) => {
     workspaces.sort();
     res.send(indexPage(workspaces));
 });
-app.get('/keywing/:workspace', (req, res) => {
+app.get('/earthstar/:workspace', (req, res) => {
     let kw = obtainStore(req.params.workspace, false);
     if (kw === undefined) { res.sendStatus(404); return; };
     res.send(workspaceOverview(kw));
 });
-app.get('/keywing/:workspace/keys', (req, res) => {
+app.get('/earthstar/:workspace/keys', (req, res) => {
     let kw = obtainStore(req.params.workspace, false);
     if (kw === undefined) { res.sendStatus(404); return; };
     res.json(kw.keys());
 });
-app.get('/keywing/:workspace/items', (req, res) => {
+app.get('/earthstar/:workspace/items', (req, res) => {
     let kw = obtainStore(req.params.workspace, false);
     if (kw === undefined) { res.sendStatus(404); return; };
     res.json(kw.items({ includeHistory: true }));
 });
-app.post('/keywing/:workspace/items', express.json({type: '*/*'}), (req, res) => {
+app.post('/earthstar/:workspace/items', express.json({type: '*/*'}), (req, res) => {
     let kw = obtainStore(req.params.workspace, ALLOW_PUSH_TO_NEW_WORKSPACES);
     if (kw === undefined) { res.sendStatus(404); return; };
     let items : Item[] = req.body;
