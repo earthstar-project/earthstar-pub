@@ -2,6 +2,7 @@
 
 import 'fs';
 import express = require('express');
+import cors = require('cors');
 import * as earthstar from 'earthstar';
 import {
     StoreMemory,
@@ -187,6 +188,8 @@ let obtainStore = (workspace : string, createOnDemand : boolean) : IStore | unde
 }
 
 let app = express();
+app.use(cors());
+
 let port = 3333;
 app.get('/', (req, res) => {
     let workspaces = Object.keys(workspaceToStore);
