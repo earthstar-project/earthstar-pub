@@ -1,14 +1,14 @@
 {
-  "name": "keywing-pub",
+  "name": "earthstar-pub",
   "version": "0.0.3",
-  "description": "Host Keywing workspaces via HTTP",
+  "description": "Host Earthstar workspaces via HTTP",
   "repository": {
     "type": "git",
-    "url": "git+ssh://git@github.com/cinnamon-bun/keywing-pub.git"
+    "url": "git+ssh://git@github.com/cinnamon-bun/earthstar-pub.git"
   },
   "main": "./build/index.js",
   "bin": {
-    "keywing-pub": "./build/index.js"
+    "earthstar-pub": "./build/index.js"
   },
   "scripts": {
     "clean": "rm -rf build/*",
@@ -28,7 +28,7 @@
   },
   "dependencies": {
     "express": "^4.17.1",
-    "keywing": "^0.5.0",
+    "earthstar": "^0.6.0",
     "tslib": "^2.0.0"
   }
 }

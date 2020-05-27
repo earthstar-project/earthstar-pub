@@ -1,14 +1,14 @@
 #!/usr/bin/env node
 
 import express = require('express');
-import * as keywing from 'keywing';
+import * as earthstar from 'earthstar';
 import {
     StoreMemory,
     ValidatorKw1,
     IStore,
     Keypair,
     Item,
-} from 'keywing';
+} from 'earthstar';
 import 'fs';
 
 //================================================================================
@@ -20,7 +20,7 @@ let demoKeypair : Keypair = {
     public: 'Ki6aDqWS5O5pQlmrQWv2kT97abIWCC0wqbMrwoqoZq0=',
     secret: 'VSdYKDZzl2A4Cm7AW5GGgGWv3MtNKszf7bOcvgW/LRo='
 }
-let demoAuthor = keywing.addSigilToKey(demoKeypair.public);
+let demoAuthor = earthstar.addSigilToKey(demoKeypair.public);
 
 demoKw.set({
     format: 'kw.1',

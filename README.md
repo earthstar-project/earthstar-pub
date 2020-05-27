@@ -1,12 +1,12 @@
-# Keywing Pub
+# Earthstar Pub
 
-Hosts [Keywing](https://github.com/cinnamon-bun/keywing) databases via HTTP.
+Hosts [Earthstar](https://github.com/cinnamon-bun/earthstar) workspaces via HTTP.
 
-One pub can hold multiple Keywing workspaces.
+One pub server can hold multiple Earthstar workspaces.
 
 You can
 * View the data through a web interface
-* Sync your local files to/from the server using [keywing-cli](https://github.com/cinnamon-bun/keywing-cli/)
+* Sync your local files to/from the server using [earthstar-cli](https://github.com/cinnamon-bun/earthstar-cli/)
 
 Pub servers don't sync directly to each other (yet?).
 
@@ -22,7 +22,7 @@ npm start
 ```
 or
 ```
-keywing-pub
+earthstar-pub
 ```
 
 Then visit http://localhost:3333
