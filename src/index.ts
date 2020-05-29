@@ -8,6 +8,8 @@ import * as earthstar from 'earthstar';
 import {
     StoreMemory,
     ValidatorEs1,
+    ValidatorUnsigned1,
+    IValidator,
     IStore,
     Keypair,
     Item,
@@ -16,35 +18,48 @@ import {
 //================================================================================
 // EARTHSTAR SETUP
 
-let demoWorkspace = 'demo';
-let demoEs = new StoreMemory([ValidatorEs1], demoWorkspace);
-let demoKeypair : Keypair = {
-    public: 'Ki6aDqWS5O5pQlmrQWv2kT97abIWCC0wqbMrwoqoZq0=',
-    secret: 'VSdYKDZzl2A4Cm7AW5GGgGWv3MtNKszf7bOcvgW/LRo='
+let getValidators = (unsigned : boolean | undefined) => {
+    let vals : IValidator[] = [ValidatorEs1];
+    if (unsigned === true) {
+        vals.push(ValidatorUnsigned1);
+        console.log('WARNING: Allowing unsigned items.  This is insecure.');
+    }
+    return vals;
 }
-let demoAuthor = earthstar.addSigilToKey(demoKeypair.public);
 
-demoEs.set({
-    format: 'es.1',
-    key: 'wiki/kittens',
-    value: 'Kittens are small mammals',
-    author: demoAuthor,
-    authorSecret: demoKeypair.secret,
-});
-demoEs.set({
-    format: 'es.1',
-    key: 'wiki/puppies',
-    value: 'Puppies go bark bark',
-    author: demoAuthor,
-    authorSecret: demoKeypair.secret,
-});
-demoEs.set({
-    format: 'es.1',
-    key: `~${demoAuthor}/about/name`,
-    value: 'Example Sam',
-    author: demoAuthor,
-    authorSecret: demoKeypair.secret,
-});
+let makeDemoStore = (unsigned : boolean | undefined) : IStore => {
+    let demoWorkspace = 'demo';
+    let demoStore = new StoreMemory(getValidators(unsigned), demoWorkspace);
+    let format = unsigned === true ? 'unsigned.1' : 'es.1';
+    let demoKeypair : Keypair = {
+        public: 'Ki6aDqWS5O5pQlmrQWv2kT97abIWCC0wqbMrwoqoZq0=',
+        secret: 'VSdYKDZzl2A4Cm7AW5GGgGWv3MtNKszf7bOcvgW/LRo='
+    }
+    let demoAuthor = earthstar.addSigilToKey(demoKeypair.public);
+
+    demoStore.set({
+        format: format,
+        key: 'wiki/kittens',
+        value: 'Kittens are small mammals',
+        author: demoAuthor,
+        authorSecret: demoKeypair.secret,
+    });
+    demoStore.set({
+        format: format,
+        key: 'wiki/puppies',
+        value: 'Puppies go bark bark',
+        author: demoAuthor,
+        authorSecret: demoKeypair.secret,
+    });
+    demoStore.set({
+        format: format,
+        key: `~${demoAuthor}/about/name`,
+        value: 'Example Sam',
+        author: demoAuthor,
+        authorSecret: demoKeypair.secret,
+    });
+    return demoStore;
+}
 
 //================================================================================
 // VIEWS
@@ -177,20 +192,23 @@ let indexPage = (workspaces : string[]) : string =>
 //================================================================================
 // COMMAND LINE
 
+
 let program = new commander.Command();
 program
     .name('earthstar-pub')
     .description('Run an HTTP server which hosts and replicates Earthstar workspaces.')
     .option('-p, --port <port>', 'which port to serve on', '3333')
     .option('--readonly', "don't accept any pushed data from users", false)
-    .option('-c, --closed', "accept data to existing workspaces but don't create new workspaces.", false);
+    .option('-c, --closed', "accept data to existing workspaces but don't create new workspaces.", false)
     //.option('-d, --dbfile <filename>', 'filename for sqlite database.  if omitted, data is only kept in memory')
-
+    .option('--unsigned', 'Allow/create messages of type "unsigned.1" which do not have signatures.  This is insecure.  Only use it for testing.');
+    
 program.parse(process.argv);
 
 let PORT : number = +program.port;
 //let DBFILE : string | undefined = program.dbfile;
 let READONLY : boolean = program.readonly;
+let UNSIGNED : boolean = program.unsigned === true;
 let ALLOW_PUSH_TO_NEW_WORKSPACES : boolean = !(program.closed || READONLY);
 
 //================================================================================
@@ -199,14 +217,15 @@ let ALLOW_PUSH_TO_NEW_WORKSPACES : boolean = !(program.closed || READONLY);
 // a structure to hold our Earthstar stores
 let workspaceToStore : {[ws : string] : IStore} = {};
 
-// add our test store from above
-workspaceToStore[demoWorkspace] = demoEs;
+// add the demo store
+let demoStore = makeDemoStore(UNSIGNED);
+workspaceToStore[demoStore.workspace] = demoStore;
 
-let obtainStore = (workspace : string, createOnDemand : boolean) : IStore | undefined => {
+let obtainStore = (workspace : string, createOnDemand : boolean, unsigned : boolean | undefined) : IStore | undefined => {
     let kw = workspaceToStore[workspace];
     if (kw !== undefined) { return kw; }
     if (createOnDemand) {
-        kw = new StoreMemory([ValidatorEs1], workspace);
+        kw = new StoreMemory(getValidators(unsigned), workspace);
         workspaceToStore[workspace] = kw;
         return kw;
     } 
@@ -224,23 +243,23 @@ app.get('/', (req, res) => {
     res.send(indexPage(workspaces));
 });
 app.get('/earthstar/:workspace', (req, res) => {
-    let kw = obtainStore(req.params.workspace, false);
+    let kw = obtainStore(req.params.workspace, false, UNSIGNED);
     if (kw === undefined) { res.sendStatus(404); return; };
     res.send(workspaceOverview(kw));
 });
 app.get('/earthstar/:workspace/keys', (req, res) => {
-    let kw = obtainStore(req.params.workspace, false);
+    let kw = obtainStore(req.params.workspace, false, UNSIGNED);
     if (kw === undefined) { res.sendStatus(404); return; };
     res.json(kw.keys());
 });
 app.get('/earthstar/:workspace/items', (req, res) => {
-    let kw = obtainStore(req.params.workspace, false);
+    let kw = obtainStore(req.params.workspace, false, UNSIGNED);
     if (kw === undefined) { res.sendStatus(404); return; };
     res.json(kw.items({ includeHistory: true }));
 });
 app.post('/earthstar/:workspace/items', express.json({type: '*/*'}), (req, res) => {
     if (READONLY) { res.sendStatus(403); return; }
-    let kw = obtainStore(req.params.workspace, ALLOW_PUSH_TO_NEW_WORKSPACES);
+    let kw = obtainStore(req.params.workspace, ALLOW_PUSH_TO_NEW_WORKSPACES, UNSIGNED);
     if (kw === undefined) { res.sendStatus(404); return; };
     let items : Item[] = req.body;
     let numIngested = 0;
