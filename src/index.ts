@@ -4,15 +4,14 @@ import 'fs';
 import commander = require('commander');
 import express = require('express');
 import cors = require('cors');
-import * as earthstar from 'earthstar';
 import {
+    IStore,
+    IValidator,
+    Item,
+    Keypair,
     StoreMemory,
     ValidatorEs1,
     ValidatorUnsigned1,
-    IValidator,
-    IStore,
-    Keypair,
-    Item,
 } from 'earthstar';
 
 //================================================================================
@@ -32,31 +31,25 @@ let makeDemoStore = (unsigned : boolean | undefined) : IStore => {
     let demoStore = new StoreMemory(getValidators(unsigned), demoWorkspace);
     let format = unsigned === true ? 'unsigned.1' : 'es.1';
     let demoKeypair : Keypair = {
-        public: 'Ki6aDqWS5O5pQlmrQWv2kT97abIWCC0wqbMrwoqoZq0=',
-        secret: 'VSdYKDZzl2A4Cm7AW5GGgGWv3MtNKszf7bOcvgW/LRo='
+        public: "@AdETDG71U1nzWDmTPAz3z4Wz2jYuiTTJ4Uo9s4KjZ8oo",
+        secret: "9jKLfpwuWd8pjtaux5jomzZD1ZSh5XBPh3SaRtCTsW6Y"
     }
-    let demoAuthor = earthstar.addSigilToKey(demoKeypair.public);
+    let demoAuthor = demoKeypair.public;
 
-    demoStore.set({
+    demoStore.set(demoKeypair, {
         format: format,
         key: 'wiki/kittens',
         value: 'Kittens are small mammals',
-        author: demoAuthor,
-        authorSecret: demoKeypair.secret,
     });
-    demoStore.set({
+    demoStore.set(demoKeypair, {
         format: format,
         key: 'wiki/puppies',
         value: 'Puppies go bark bark',
-        author: demoAuthor,
-        authorSecret: demoKeypair.secret,
     });
-    demoStore.set({
+    demoStore.set(demoKeypair, {
         format: format,
         key: `~${demoAuthor}/about/name`,
         value: 'Example Sam',
-        author: demoAuthor,
-        authorSecret: demoKeypair.secret,
     });
     return demoStore;
 }
