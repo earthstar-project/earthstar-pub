@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-import 'fs';
+import path = require('path');
 import commander = require('commander');
 import express = require('express');
 import cors = require('cors');
@@ -162,7 +162,7 @@ let workspaceOverview = (kw : IStore) : string =>
 
 let indexPage = (workspaces : string[]) : string =>
     htmlWrapper(
-        `<p><img src="/img/earthstar-logo-only.png" alt="earthstar logo" width=127 height=129 /></p>
+        `<p><img src="/static/img/earthstar-logo-only.png" alt="earthstar logo" width=127 height=129 /></p>
         <h1>Earthstar Pub</h1>
         <p>This is a demo pub hosting the following workspaces:</p>
         <ul>
@@ -228,7 +228,8 @@ let obtainStore = (workspace : string, createOnDemand : boolean, unsigned : bool
 let app = express();
 app.use(cors());
 
-app.use(express.static('public'));
+let publicDir = path.join(__dirname, '../public/static');
+app.use('/static', express.static(publicDir));
 
 app.get('/', (req, res) => {
     let workspaces = Object.keys(workspaceToStore);
