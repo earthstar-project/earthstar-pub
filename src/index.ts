@@ -38,13 +38,8 @@ let makeDemoStore = (unsigned : boolean | undefined) : IStore => {
 
     demoStore.set(demoKeypair, {
         format: format,
-        key: 'wiki/kittens',
-        value: 'Kittens are small mammals',
-    });
-    demoStore.set(demoKeypair, {
-        format: format,
-        key: 'wiki/puppies',
-        value: 'Puppies go bark bark',
+        key: 'wiki/Pub',
+        value: 'Pubs are servers that help you sync.',
     });
     demoStore.set(demoKeypair, {
         format: format,
@@ -71,7 +66,7 @@ let safe = (str : string) =>
 let htmlWrapper = (page : string) : string => 
     `<html>
     <head>
-        <title>🌎⭐️ Earthstar Pub</title>
+        <title>🌎⭐️🗃 Earthstar Pub</title>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no">
         <style>
@@ -84,8 +79,21 @@ let htmlWrapper = (page : string) : string =>
                 background: white;
                 padding: 10px;
             }
+            :root {
+                --cKey: #ffe2b8;
+                --cValue: #c9fcb7;
+                --cWorkspace: #c5e8ff;
+                --cAuthor: #f6cdff;
+            }
+            .cKey { background: var(--cKey); }
+            .cValue { background: var(--cValue); }
+            .cWorkspace { background: var(--cWorkspace); }
+            .cAuthor { background: var(--cAuthor); }
+            a {
+                text-decoration: underline;
+            }
             code {
-                background: #e8f9dc;
+                background: #eee;
                 padding: 4px 7px;
                 margin: 2px;
                 border-radius: 3px;
@@ -94,9 +102,8 @@ let htmlWrapper = (page : string) : string =>
                 word-break: break-all;
                 font-size: 16px;
             }
-            td { vertical-align: top; }
             pre {
-                background: #f9eadc;
+                background: #eee;
                 padding: 4px 7px;
                 margin: 2px;
                 border-radius: 3px;
@@ -104,8 +111,14 @@ let htmlWrapper = (page : string) : string =>
                 word-break: break-all;
                 white-space: pre-wrap;
             }
-            a code {
-                text-decoration: underline;
+            .small {
+                font-size: 80%;
+            }
+            .outlined {
+                border: 2px solid #444;
+            }
+            .indent {
+                margin-left: 50px;
             }
         </style>
     <body>
@@ -122,29 +135,39 @@ let apiDocs = (workspace : string) =>
     </ul>`;
 
 let storeTable = (kw : IStore) : string =>
-    `<table>
-        <tr>
-            <th>Key</th>
-            <th>Value</th>
-        </tr>
-        ${kw.items().map(item =>
+    kw.items().map(item =>
+        `<div><code class="cKey">${safe(item.key)}</code></div>
+        <div><pre class="cValue indent">${safe(item.value)}</pre></div>
+        <details class="indent">
+            <summary>...</summary>
+            ${
+                kw.items({ key: item.key, includeHistory: true, }).map((subitem, ii) => {
+                    let outlineClass = ii === 0 ? 'outlined' : ''
+                    return `<pre class="small ${outlineClass}">${JSON.stringify(subitem, null, 2)}</pre>`
+                }).join('\n')
+            }
+        </details>
+        <div>&nbsp;</div>
+        `
+    ).join('\n');
+
+            /*
             `<tr>
                 <td>
                     <details>
                         <summary>
-                            <code>${safe(item.key)}</code>
+                            <code class="cKey">${safe(item.key)}</code>
                         </summary>
                         <pre>${JSON.stringify(item, null, 2)}</pre>
                     </details>
                 </td>
-                <td><code>${safe(item.value)}</code></td>
-            </tr>`).join('\n')}
-    </table>`;
+                <td><code class="cValue">${safe(item.value)}</code></td>
+            </tr>`).join('\n')}*/
 
 let workspaceOverview = (kw : IStore) : string =>
     htmlWrapper(
         `<p><a href="/">&larr; Home</a></p>
-        <h2>Workspace: <code>${safe(kw.workspace)}</code></h2>
+        <h2>Workspace: <code class="cWorkspace">${safe(kw.workspace)}</code></h2>
         <hr />
         ${storeTable(kw)}
         <hr />
