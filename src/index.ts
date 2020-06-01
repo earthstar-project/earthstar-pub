@@ -14,6 +14,9 @@ import {
     ValidatorUnsigned1,
 } from 'earthstar';
 
+let log = console.log;
+let logVerbose = console.log;
+
 //================================================================================
 // EARTHSTAR SETUP
 
@@ -21,14 +24,14 @@ let getValidators = (unsigned : boolean | undefined) => {
     let vals : IValidator[] = [ValidatorEs1];
     if (unsigned === true) {
         vals.push(ValidatorUnsigned1);
-        console.log('WARNING: Allowing unsigned items.  This is insecure.');
+        log('WARNING: Allowing unsigned items.  This is insecure.');
     }
     return vals;
 }
 
+let DEMO_WORKSPACE = 'demo';
 let makeDemoStore = (unsigned : boolean | undefined) : IStore => {
-    let demoWorkspace = 'demo';
-    let demoStore = new StoreMemory(getValidators(unsigned), demoWorkspace);
+    let demoStore = new StoreMemory(getValidators(unsigned), DEMO_WORKSPACE);
     let format = unsigned === true ? 'unsigned.1' : 'es.1';
     let demoKeypair : Keypair = {
         public: "@AdETDG71U1nzWDmTPAz3z4Wz2jYuiTTJ4Uo9s4KjZ8oo",
@@ -63,7 +66,7 @@ let safe = (str : string) =>
         '"': '&quot;'
     } as any)[tag]));
 
-let htmlWrapper = (page : string) : string => 
+let htmlHeaderAndFooter = (page : string) : string => 
     `<html>
     <head>
         <title>🌎⭐️🗃 Earthstar Pub</title>
@@ -80,16 +83,40 @@ let htmlWrapper = (page : string) : string =>
                 padding: 10px;
             }
             :root {
+                --ratio: 1.5;
+                --s-5: calc(var(--s-4) / var(--ratio));
+                --s-4: calc(var(--s-3) / var(--ratio));
+                --s-3: calc(var(--s-2) / var(--ratio));
+                --s-2: calc(var(--s-1) / var(--ratio));
+                --s-1: calc(var(--s0) / var(--ratio));
+                --s0: 1rem;
+                --s1: calc(var(--s0) * var(--ratio));
+                --s2: calc(var(--s1) * var(--ratio));
+                --s3: calc(var(--s2) * var(--ratio));
+                --s4: calc(var(--s3) * var(--ratio));
+                --s5: calc(var(--s4) * var(--ratio));
+                --round: var(--s0);
+
                 --cKey: #ffe2b8;
                 --cValue: #c9fcb7;
                 --cWorkspace: #c5e8ff;
                 --cAuthor: #f6cdff;
+
+                --cAccentDark: #5e4d76;
+                --cAccentLight: #a4f;
+
+                --cGray90: #e2e2e2;
+                --cGrayShadow: #bbb;
+                --cGrayTextOnWhite: #888;
+                --cWhite: #fff;
+                --cBlack: #222;
+                --cYellow: #fef8bb;
             }
             .cKey { background: var(--cKey); }
             .cValue { background: var(--cValue); }
             .cWorkspace { background: var(--cWorkspace); }
             .cAuthor { background: var(--cAuthor); }
-            a {
+            a code {
                 text-decoration: underline;
             }
             code {
@@ -120,11 +147,65 @@ let htmlWrapper = (page : string) : string =>
             .indent {
                 margin-left: 50px;
             }
+            button, input[type="submit"] {
+                background: var(--cAccentDark);
+                color: var(--cWhite);
+                padding: var(--s-2) var(--s-1);
+                border: none;
+                border-radius: var(--round);
+                line-height: 21px;
+                font-size: 16px;
+            }
         </style>
     <body>
         ${page}
     </body>
     </html>`
+
+let listOfWorkspaces = (workspaces : string[]) : string =>
+    htmlHeaderAndFooter(
+        `<p><img src="/static/img/earthstar-logo-only.png" alt="earthstar logo" width=127 height=129 /></p>
+        <h1>Earthstar Pub</h1>
+        <p>This is a demo pub hosting the following workspaces:</p>
+        <ul>
+        ${workspaces.length === 0 ? `
+            <li><i>No workspaces yet.  Create one by syncing with this pub, or</i></li>
+                <form action="/earthstar/create-demo-workspace" method="post">
+                    <input type="submit" name="make-demo" value="Create a demo workspace" />
+                </form>
+            </li>
+        ` : ''}
+        ${workspaces.map(ws =>
+            `<li><a href="/earthstar/${safe(ws)}"><code class="cWorkspace">${safe(ws)}</code></a></li>`
+        ).join('\n')}
+        </ul>
+        <h2>How to use</h2>
+        <p>You can sync with this pub using <a href="https://github.com/cinnamon-bun/earthstar-cli">earthstar-cli</a>.</p>
+        <p>First create a local database with the same workspace name:</p>
+        <p><code>$ earthstar create localfile.sqlite demo</code></p>
+        Then you can sync:
+        <p><code>$ earthstar sync localfile.sqlite http://localhost:3333/earthstar/</code></p>
+        <hr/>
+        <p><small><a href="https://github.com/cinnamon-bun/earthstar">Earthstar on Github</a></small></p>
+        `
+    );
+
+let workspaceDetails = (es : IStore) : string =>
+    htmlHeaderAndFooter(
+        `<p><a href="/">&larr; Home</a></p>
+        <h2>Workspace: <code class="cWorkspace">${safe(es.workspace)}</code></h2>
+        <hr />
+        ${storeTable(es)}
+        <hr />
+        ${apiDocs(es.workspace)}
+        <hr />
+        <form action="/earthstar/${es.workspace}/delete" method="post">
+            <input type="submit" name="upvote" value="Delete this workspace" />
+        </form>
+        `
+    );
+    /*
+    */
 
 let apiDocs = (workspace : string) =>
     `<h2>HTTP API</h2>
@@ -164,45 +245,6 @@ let storeTable = (kw : IStore) : string =>
                 <td><code class="cValue">${safe(item.value)}</code></td>
             </tr>`).join('\n')}*/
 
-let workspaceOverview = (kw : IStore) : string =>
-    htmlWrapper(
-        `<p><a href="/">&larr; Home</a></p>
-        <h2>Workspace: <code class="cWorkspace">${safe(kw.workspace)}</code></h2>
-        <hr />
-        ${storeTable(kw)}
-        <hr />
-        ${apiDocs(kw.workspace)}
-        `
-    );
-    /*
-        <p>Example author:</p>
-        <blockquote>
-            <p>pubkey: <code>${safe(demoAuthor)}</code></p>
-            <p>secret: <code>${safe(demoKeypair.secret)}</code></p>
-        </blockquote>
-        <hr />
-    */
-
-let indexPage = (workspaces : string[]) : string =>
-    htmlWrapper(
-        `<p><img src="/static/img/earthstar-logo-only.png" alt="earthstar logo" width=127 height=129 /></p>
-        <h1>Earthstar Pub</h1>
-        <p>This is a demo pub hosting the following workspaces:</p>
-        <ul>
-        ${workspaces.map(ws =>
-            `<li><a href="/earthstar/${safe(ws)}"><code>${safe(ws)}</code></a></li>`
-        ).join('\n')}
-        </ul>
-        <h2>How to use</h2>
-        <p>You can sync with this pub using <a href="https://github.com/cinnamon-bun/earthstar-cli">earthstar-cli</a>.</p>
-        <p>First create a local database with the same workspace name:</p>
-        <p><code>$ earthstar create localfile.sqlite demo</code></p>
-        Then you can sync:
-        <p><code>$ earthstar sync localfile.sqlite http://localhost:3333/earthstar/</code></p>
-        <hr/>
-        <p><small><a href="https://github.com/cinnamon-bun/earthstar">Earthstar on Github</a></small></p>
-        `
-    );
 
 
 //================================================================================
@@ -224,7 +266,7 @@ program.parse(process.argv);
 let PORT : number = +program.port;
 //let DBFILE : string | undefined = program.dbfile;
 let READONLY : boolean = program.readonly;
-let UNSIGNED : boolean = program.unsigned === true;
+let ALLOW_UNSIGNED : boolean = program.unsigned === true;
 let ALLOW_PUSH_TO_NEW_WORKSPACES : boolean = !(program.closed || READONLY);
 
 //================================================================================
@@ -234,7 +276,7 @@ let ALLOW_PUSH_TO_NEW_WORKSPACES : boolean = !(program.closed || READONLY);
 let workspaceToStore : {[ws : string] : IStore} = {};
 
 // add the demo store
-let demoStore = makeDemoStore(UNSIGNED);
+let demoStore = makeDemoStore(ALLOW_UNSIGNED);
 workspaceToStore[demoStore.workspace] = demoStore;
 
 let obtainStore = (workspace : string, createOnDemand : boolean, unsigned : boolean | undefined) : IStore | undefined => {
@@ -251,37 +293,41 @@ let obtainStore = (workspace : string, createOnDemand : boolean, unsigned : bool
 let app = express();
 app.use(cors());
 
-let publicDir = path.join(__dirname, '../public/static');
+let publicDir = path.join(__dirname, '../public/static' );
 app.use('/static', express.static(publicDir));
 
 app.get('/', (req, res) => {
     let workspaces = Object.keys(workspaceToStore);
     workspaces.sort();
-    res.send(indexPage(workspaces));
+    res.send(listOfWorkspaces(workspaces));
 });
+
 app.get('/earthstar/:workspace', (req, res) => {
-    let kw = obtainStore(req.params.workspace, false, UNSIGNED);
-    if (kw === undefined) { res.sendStatus(404); return; };
-    res.send(workspaceOverview(kw));
+    let es = obtainStore(req.params.workspace, false, ALLOW_UNSIGNED);
+    if (es === undefined) { res.sendStatus(404); return; };
+    res.send(workspaceDetails(es));
 });
 app.get('/earthstar/:workspace/keys', (req, res) => {
-    let kw = obtainStore(req.params.workspace, false, UNSIGNED);
-    if (kw === undefined) { res.sendStatus(404); return; };
-    res.json(kw.keys());
+    let es = obtainStore(req.params.workspace, false, ALLOW_UNSIGNED);
+    if (es === undefined) { res.sendStatus(404); return; };
+    logVerbose('giving keys');
+    res.json(es.keys());
 });
 app.get('/earthstar/:workspace/items', (req, res) => {
-    let kw = obtainStore(req.params.workspace, false, UNSIGNED);
-    if (kw === undefined) { res.sendStatus(404); return; };
-    res.json(kw.items({ includeHistory: true }));
+    let es = obtainStore(req.params.workspace, false, ALLOW_UNSIGNED);
+    if (es === undefined) { res.sendStatus(404); return; };
+    logVerbose('giving items');
+    res.json(es.items({ includeHistory: true }));
 });
 app.post('/earthstar/:workspace/items', express.json({type: '*/*'}), (req, res) => {
     if (READONLY) { res.sendStatus(403); return; }
-    let kw = obtainStore(req.params.workspace, ALLOW_PUSH_TO_NEW_WORKSPACES, UNSIGNED);
-    if (kw === undefined) { res.sendStatus(404); return; };
+    let es = obtainStore(req.params.workspace, ALLOW_PUSH_TO_NEW_WORKSPACES, ALLOW_UNSIGNED);
+    if (es === undefined) { res.sendStatus(404); return; };
+    logVerbose('ingesting items');
     let items : Item[] = req.body;
     let numIngested = 0;
     for (let item of items) {
-        if (kw.ingestItem(item)) { numIngested += 1 }
+        if (es.ingestItem(item)) { numIngested += 1 }
     }
     res.json({
         numIngested: numIngested,
@@ -290,4 +336,20 @@ app.post('/earthstar/:workspace/items', express.json({type: '*/*'}), (req, res) 
     });
 });
 
-app.listen(PORT, () => console.log(`Listening on http://localhost:${PORT}`));
+// quick hack to allow removing workspaces from the demo pub
+// (they will come back if you sync them again)
+app.post('/earthstar/:workspace/delete', (req, res) => {
+    logVerbose('deleting workspace: ', req.params.workspace);
+    delete workspaceToStore[req.params.workspace];
+    res.redirect('/');
+});
+// quick hack to restore the demo workspace
+app.post('/earthstar/create-demo-workspace', (req, res) => {
+    logVerbose('creating demo workspace');
+    let demoStore = makeDemoStore(ALLOW_UNSIGNED);
+    workspaceToStore[demoStore.workspace] = demoStore;
+    res.redirect('/');
+});
+
+
+app.listen(PORT, () => log(`Listening on http://localhost:${PORT}`));
