@@ -302,6 +302,10 @@ app.get('/', (req, res) => {
     res.send(listOfWorkspaces(workspaces));
 });
 
+app.get('/earthstar/', (req, res) => {
+    res.redirect('/');
+});
+
 app.get('/earthstar/:workspace', (req, res) => {
     let es = obtainStore(req.params.workspace, false, ALLOW_UNSIGNED);
     if (es === undefined) { res.sendStatus(404); return; };
