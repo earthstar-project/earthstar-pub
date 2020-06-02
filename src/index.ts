@@ -165,8 +165,8 @@ let htmlHeaderAndFooter = (page : string) : string =>
 let listOfWorkspaces = (workspaces : string[]) : string =>
     htmlHeaderAndFooter(
         `<p><img src="/static/img/earthstar-logo-only.png" alt="earthstar logo" width=127 height=129 /></p>
-        <h1>Earthstar Pub</h1>
-        <p>This is a demo pub hosting the following workspaces:</p>
+        <h1>🗃 Earthstar Pub</h1>
+        <p>This is a demo pub server hosting the following workspaces:</p>
         <ul>
         ${workspaces.length === 0 ? `
             <li><i>No workspaces yet.  Create one by syncing with this pub, or</i></li>
@@ -176,7 +176,7 @@ let listOfWorkspaces = (workspaces : string[]) : string =>
             </li>
         ` : ''}
         ${workspaces.map(ws =>
-            `<li><a href="/earthstar/${safe(ws)}"><code class="cWorkspace">${safe(ws)}</code></a></li>`
+            `<li>📂 <a href="/earthstar/${safe(ws)}"><code class="cWorkspace">${safe(ws)}</code></a></li>`
         ).join('\n')}
         </ul>
         <h2>How to use</h2>
@@ -193,9 +193,9 @@ let listOfWorkspaces = (workspaces : string[]) : string =>
 let workspaceDetails = (es : IStore) : string =>
     htmlHeaderAndFooter(
         `<p><a href="/">&larr; Home</a></p>
-        <h2>Workspace: <code class="cWorkspace">${safe(es.workspace)}</code></h2>
+        <h2>📂 Workspace: <code class="cWorkspace">${safe(es.workspace)}</code></h2>
         <hr />
-        ${storeTable(es)}
+        ${keysAndValues(es)}
         <hr />
         ${apiDocs(es.workspace)}
         <hr />
@@ -215,9 +215,10 @@ let apiDocs = (workspace : string) =>
         <li>POST <code>/workspace/:workspace/items</code> - upload items (supply as a JSON array)</li>
     </ul>`;
 
-let storeTable = (kw : IStore) : string =>
+let keysAndValues = (kw : IStore) : string =>
+    `<h2>Keys and values</h2>` + 
     kw.items().map(item =>
-        `<div><code class="cKey">${safe(item.key)}</code></div>
+        `<div>📄 <code class="cKey">${safe(item.key)}</code></div>
         <div><pre class="cValue indent">${safe(item.value)}</pre></div>
         <details class="indent">
             <summary>...</summary>
