@@ -41,13 +41,13 @@ let makeDemoStore = (unsigned : boolean | undefined) : IStore => {
 
     demoStore.set(demoKeypair, {
         format: format,
-        key: 'wiki/Pub',
-        value: 'Pubs are servers that help you sync.',
+        key: 'wiki/shared/A%20page%20from%20the%20pub',
+        value: 'This page arrived from the pub during a sync.',
     });
     demoStore.set(demoKeypair, {
         format: format,
-        key: `~${demoAuthor}/about/name`,
-        value: 'Example Sam',
+        key: `about/~${demoAuthor}/name`,
+        value: 'Example Author From The Pub',
     });
     return demoStore;
 }
