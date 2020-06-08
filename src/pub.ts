@@ -1,7 +1,6 @@
 #!/usr/bin/env node
 
 import path = require('path');
-import commander = require('commander');
 import express = require('express');
 import cors = require('cors');
 import {
@@ -251,110 +250,100 @@ let keysAndValues = (kw : IStore) : string =>
 //================================================================================
 // COMMAND LINE
 
-
-let program = new commander.Command();
-program
-    .name('earthstar-pub')
-    .description('Run an HTTP server which hosts and replicates Earthstar workspaces.')
-    .option('-p, --port <port>', 'which port to serve on', '3333')
-    .option('--readonly', "don't accept any pushed data from users", false)
-    .option('-c, --closed', "accept data to existing workspaces but don't create new workspaces.", false)
-    //.option('-d, --dbfile <filename>', 'filename for sqlite database.  if omitted, data is only kept in memory')
-    .option('--unsigned', 'Allow/create messages of type "unsigned.1" which do not have signatures.  This is insecure.  Only use it for testing.');
-    
-program.parse(process.argv);
-
-let PORT : number = +program.port;
-//let DBFILE : string | undefined = program.dbfile;
-let READONLY : boolean = program.readonly;
-let ALLOW_UNSIGNED : boolean = program.unsigned === true;
-let ALLOW_PUSH_TO_NEW_WORKSPACES : boolean = !(program.closed || READONLY);
+export interface PubOpts {
+    port : number,
+    readonly : boolean,
+    allowUnsigned : boolean,
+    allowPushToNewWorkspaces : boolean,
+};
 
 //================================================================================
 // EXPRESS
 
-// a structure to hold our Earthstar stores
-let workspaceToStore : {[ws : string] : IStore} = {};
+export let serve = (opts : PubOpts) => {
+    // a structure to hold our Earthstar stores
+    let workspaceToStore : {[ws : string] : IStore} = {};
 
-// add the demo store
-let demoStore = makeDemoStore(ALLOW_UNSIGNED);
-workspaceToStore[demoStore.workspace] = demoStore;
-
-let obtainStore = (workspace : string, createOnDemand : boolean, unsigned : boolean | undefined) : IStore | undefined => {
-    let kw = workspaceToStore[workspace];
-    if (kw !== undefined) { return kw; }
-    if (createOnDemand) {
-        kw = new StoreMemory(getValidators(unsigned), workspace);
-        workspaceToStore[workspace] = kw;
-        return kw;
-    } 
-    return undefined;
-}
-
-let app = express();
-app.use(cors());
-
-let publicDir = path.join(__dirname, '../public/static' );
-app.use('/static', express.static(publicDir));
-
-app.get('/', (req, res) => {
-    let workspaces = Object.keys(workspaceToStore);
-    workspaces.sort();
-    res.send(listOfWorkspaces(workspaces));
-});
-
-app.get('/earthstar/', (req, res) => {
-    res.redirect('/');
-});
-
-app.get('/earthstar/:workspace', (req, res) => {
-    let es = obtainStore(req.params.workspace, false, ALLOW_UNSIGNED);
-    if (es === undefined) { res.sendStatus(404); return; };
-    res.send(workspaceDetails(es));
-});
-app.get('/earthstar/:workspace/keys', (req, res) => {
-    let es = obtainStore(req.params.workspace, false, ALLOW_UNSIGNED);
-    if (es === undefined) { res.sendStatus(404); return; };
-    logVerbose('giving keys');
-    res.json(es.keys());
-});
-app.get('/earthstar/:workspace/items', (req, res) => {
-    let es = obtainStore(req.params.workspace, false, ALLOW_UNSIGNED);
-    if (es === undefined) { res.sendStatus(404); return; };
-    logVerbose('giving items');
-    res.json(es.items({ includeHistory: true }));
-});
-app.post('/earthstar/:workspace/items', express.json({type: '*/*'}), (req, res) => {
-    if (READONLY) { res.sendStatus(403); return; }
-    let es = obtainStore(req.params.workspace, ALLOW_PUSH_TO_NEW_WORKSPACES, ALLOW_UNSIGNED);
-    if (es === undefined) { res.sendStatus(404); return; };
-    logVerbose('ingesting items');
-    let items : Item[] = req.body;
-    let numIngested = 0;
-    for (let item of items) {
-        if (es.ingestItem(item)) { numIngested += 1 }
-    }
-    res.json({
-        numIngested: numIngested,
-        numIgnored: items.length - numIngested,
-        numTotal: items.length,
-    });
-});
-
-// quick hack to allow removing workspaces from the demo pub
-// (they will come back if you sync them again)
-app.post('/earthstar/:workspace/delete', (req, res) => {
-    logVerbose('deleting workspace: ', req.params.workspace);
-    delete workspaceToStore[req.params.workspace];
-    res.redirect('/');
-});
-// quick hack to restore the demo workspace
-app.post('/earthstar/create-demo-workspace', (req, res) => {
-    logVerbose('creating demo workspace');
-    let demoStore = makeDemoStore(ALLOW_UNSIGNED);
+    // add the demo store
+    let demoStore = makeDemoStore(opts.allowUnsigned);
     workspaceToStore[demoStore.workspace] = demoStore;
-    res.redirect('/');
-});
+
+    let obtainStore = (workspace : string, createOnDemand : boolean, unsigned : boolean | undefined) : IStore | undefined => {
+        let kw = workspaceToStore[workspace];
+        if (kw !== undefined) { return kw; }
+        if (createOnDemand) {
+            kw = new StoreMemory(getValidators(unsigned), workspace);
+            workspaceToStore[workspace] = kw;
+            return kw;
+        } 
+        return undefined;
+    }
+
+    let app = express();
+    app.use(cors());
+
+    let publicDir = path.join(__dirname, '../public/static' );
+    app.use('/static', express.static(publicDir));
+
+    app.get('/', (req, res) => {
+        let workspaces = Object.keys(workspaceToStore);
+        workspaces.sort();
+        res.send(listOfWorkspaces(workspaces));
+    });
+
+    app.get('/earthstar/', (req, res) => {
+        res.redirect('/');
+    });
+
+    app.get('/earthstar/:workspace', (req, res) => {
+        let es = obtainStore(req.params.workspace, false, opts.allowUnsigned);
+        if (es === undefined) { res.sendStatus(404); return; };
+        res.send(workspaceDetails(es));
+    });
+    app.get('/earthstar/:workspace/keys', (req, res) => {
+        let es = obtainStore(req.params.workspace, false, opts.allowUnsigned);
+        if (es === undefined) { res.sendStatus(404); return; };
+        logVerbose('giving keys');
+        res.json(es.keys());
+    });
+    app.get('/earthstar/:workspace/items', (req, res) => {
+        let es = obtainStore(req.params.workspace, false, opts.allowUnsigned);
+        if (es === undefined) { res.sendStatus(404); return; };
+        logVerbose('giving items');
+        res.json(es.items({ includeHistory: true }));
+    });
+    app.post('/earthstar/:workspace/items', express.json({type: '*/*'}), (req, res) => {
+        if (opts.readonly) { res.sendStatus(403); return; }
+        let es = obtainStore(req.params.workspace, opts.allowPushToNewWorkspaces, opts.allowUnsigned);
+        if (es === undefined) { res.sendStatus(404); return; };
+        logVerbose('ingesting items');
+        let items : Item[] = req.body;
+        let numIngested = 0;
+        for (let item of items) {
+            if (es.ingestItem(item)) { numIngested += 1 }
+        }
+        res.json({
+            numIngested: numIngested,
+            numIgnored: items.length - numIngested,
+            numTotal: items.length,
+        });
+    });
+
+    // quick hack to allow removing workspaces from the demo pub
+    // (they will come back if you sync them again)
+    app.post('/earthstar/:workspace/delete', (req, res) => {
+        logVerbose('deleting workspace: ', req.params.workspace);
+        delete workspaceToStore[req.params.workspace];
+        res.redirect('/');
+    });
+    // quick hack to restore the demo workspace
+    app.post('/earthstar/create-demo-workspace', (req, res) => {
+        logVerbose('creating demo workspace');
+        let demoStore = makeDemoStore(opts.allowUnsigned);
+        workspaceToStore[demoStore.workspace] = demoStore;
+        res.redirect('/');
+    });
 
 
-app.listen(PORT, () => log(`Listening on http://localhost:${PORT}`));
+    app.listen(opts.port, () => log(`Listening on http://localhost:${opts.port}`));
+}

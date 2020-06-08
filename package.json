@@ -6,14 +6,14 @@
     "type": "git",
     "url": "git+ssh://git@github.com/cinnamon-bun/earthstar-pub.git"
   },
-  "main": "./build/index.js",
+  "main": "./build/pub.js",
   "bin": {
-    "earthstar-pub": "./build/index.js"
+    "earthstar-pub": "./build/cli.js"
   },
   "scripts": {
     "clean": "rm -rf build/*",
     "build": "tsc",
-    "start": "node build/index.js",
+    "start": "node build/cli.js",
     "build-and-start": "npm run build && npm run start",
     "test": "echo \"Error: no test specified\" && exit 1",
     "prepublishOnly": "npm run clean && npm run build"
