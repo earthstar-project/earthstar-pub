@@ -3,14 +3,13 @@
 import path = require('path');
 import express = require('express');
 import cors = require('cors');
+
 import {
-    IStore,
-    IValidator,
-    Item,
-    Keypair,
-    StoreMemory,
-    ValidatorEs1,
-    ValidatorUnsigned1,
+    IStorage,
+    Document,
+    AuthorKeypair,
+    StorageMemory,
+    ValidatorEs2,
 } from 'earthstar';
 
 let log = console.log;
@@ -19,33 +18,25 @@ let logVerbose = console.log;
 //================================================================================
 // EARTHSTAR SETUP
 
-let getValidators = (unsigned : boolean | undefined) => {
-    let vals : IValidator[] = [ValidatorEs1];
-    if (unsigned === true) {
-        vals.push(ValidatorUnsigned1);
-        log('WARNING: Allowing unsigned items.  This is insecure.');
+let VALIDATORS = [ValidatorEs2];
+let FORMAT = 'es.2';
+let DEMO_WORKSPACE = '//demo.xxxxxxxxxxxxxxxxxxxx';
+let makeDemoStorage = () : IStorage => {
+    let demoStore = new StorageMemory(VALIDATORS, DEMO_WORKSPACE);
+    let demoKeypair : AuthorKeypair = {
+        address: "@pubb.DGiggwVGtAkAKsntdDcCwXJbBUR8VZz1RhYePc6DgJPG",
+        secret: "HwjJZ6JywabNm9RAb21mRfCPT7qYo8ECnFJw2Afeo9MZ",
     }
-    return vals;
-}
-
-let DEMO_WORKSPACE = 'demo';
-let makeDemoStore = (unsigned : boolean | undefined) : IStore => {
-    let demoStore = new StoreMemory(getValidators(unsigned), DEMO_WORKSPACE);
-    let format = unsigned === true ? 'unsigned.1' : 'es.1';
-    let demoKeypair : Keypair = {
-        public: "@AdETDG71U1nzWDmTPAz3z4Wz2jYuiTTJ4Uo9s4KjZ8oo",
-        secret: "9jKLfpwuWd8pjtaux5jomzZD1ZSh5XBPh3SaRtCTsW6Y"
-    }
-    let demoAuthor = demoKeypair.public;
+    let demoAuthor = demoKeypair.address;
 
     demoStore.set(demoKeypair, {
-        format: format,
-        key: 'wiki/shared/A%20page%20from%20the%20pub',
+        format: FORMAT,
+        path: '/wiki/shared/A%20page%20from%20the%20pub',
         value: 'This page arrived from the pub during a sync.',
     });
     demoStore.set(demoKeypair, {
-        format: format,
-        key: `about/~${demoAuthor}/name`,
+        format: FORMAT,
+        path: `/about/~${demoAuthor}/name`,
         value: 'Example Author From The Pub',
     });
     return demoStore;
@@ -96,7 +87,7 @@ let htmlHeaderAndFooter = (page : string) : string =>
                 --s5: calc(var(--s4) * var(--ratio));
                 --round: var(--s0);
 
-                --cKey: #ffe2b8;
+                --cPath: #ffe2b8;
                 --cValue: #c9fcb7;
                 --cWorkspace: #c5e8ff;
                 --cAuthor: #f6cdff;
@@ -111,7 +102,7 @@ let htmlHeaderAndFooter = (page : string) : string =>
                 --cBlack: #222;
                 --cYellow: #fef8bb;
             }
-            .cKey { background: var(--cKey); }
+            .cPath { background: var(--cPath); }
             .cValue { background: var(--cValue); }
             .cWorkspace { background: var(--cWorkspace); }
             .cAuthor { background: var(--cAuthor); }
@@ -169,62 +160,60 @@ let listOfWorkspaces = (workspaces : string[]) : string =>
         <ul>
         ${workspaces.length === 0 ? `
             <li><i>No workspaces yet.  Create one by syncing with this pub, or</i></li>
-                <form action="/earthstar/create-demo-workspace" method="post">
+                <form action="/demo-hack/create-demo-workspace" method="post">
                     <input type="submit" name="make-demo" value="Create a demo workspace" />
                 </form>
             </li>
         ` : ''}
         ${workspaces.map(ws =>
-            `<li>📂 <a href="/earthstar/${safe(ws)}"><code class="cWorkspace">${safe(ws)}</code></a></li>`
+            `<li>📂 <a href="./${safe(ws.slice(1))}"><code class="cWorkspace">${safe(ws)}</code></a></li>`
         ).join('\n')}
         </ul>
         <h2>How to use</h2>
         <p>You can sync with this pub using <a href="https://github.com/cinnamon-bun/earthstar-cli">earthstar-cli</a>.</p>
         <p>First create a local database with the same workspace name:</p>
-        <p><code>$ earthstar create localfile.sqlite demo</code></p>
+        <p><code>$ earthstar create localfile.sqlite ${DEMO_WORKSPACE}</code></p>
         Then you can sync:
-        <p><code>$ earthstar sync localfile.sqlite http://localhost:3333/earthstar/</code></p>
+        <p><code>$ earthstar sync localfile.sqlite http://localhost:3333/</code></p>
         <hr/>
         <p><small><a href="https://github.com/cinnamon-bun/earthstar">Earthstar on Github</a></small></p>
         `
     );
 
-let workspaceDetails = (es : IStore) : string =>
+let workspaceDetails = (storage : IStorage) : string =>
     htmlHeaderAndFooter(
         `<p><a href="/">&larr; Home</a></p>
-        <h2>📂 Workspace: <code class="cWorkspace">${safe(es.workspace)}</code></h2>
+        <h2>📂 Workspace: <code class="cWorkspace">${safe(storage.workspace)}</code></h2>
         <hr />
-        ${keysAndValues(es)}
+        ${pathsAndValues(storage)}
         <hr />
-        ${apiDocs(es.workspace)}
+        ${apiDocs(storage.workspace)}
         <hr />
-        <form action="/earthstar/${es.workspace}/delete" method="post">
+        <form action="/earthstar-api/v1/workspace${storage.workspace}/delete" method="post">
             <input type="submit" name="upvote" value="Delete this workspace" />
         </form>
         `
     );
-    /*
-    */
 
 let apiDocs = (workspace : string) =>
     `<h2>HTTP API</h2>
     <ul>
-        <li>GET  <a href="/earthstar/${workspace}/keys"><code>/workspace/:workspace/keys</code></a> - list all keys</li>
-        <li>GET  <a href="/earthstar/${workspace}/items"><code>/workspace/:workspace/items</code></a> - list all items (including history)</li>
-        <li>POST <code>/workspace/:workspace/items</code> - upload items (supply as a JSON array)</li>
+        <li>GET  <a href="/earthstar-api/v1/workspace${workspace}/paths"><code>/earthstar-api/v1/workspace//:workspace/paths</code></a> - list all paths</li>
+        <li>GET  <a href="/earthstar-api/v1/workspace${workspace}/documents"><code>/earthstar-api/v1/workspace//:workspace/documents</code></a> - list all documents (including history)</li>
+        <li>POST <code>/workspace/:workspace/documents</code> - upload documents (supply as a JSON array)</li>
     </ul>`;
 
-let keysAndValues = (kw : IStore) : string =>
-    `<h2>Keys and values</h2>` + 
-    kw.items().map(item =>
-        `<div>📄 <code class="cKey">${safe(item.key)}</code></div>
-        <div><pre class="cValue indent">${safe(item.value)}</pre></div>
+let pathsAndValues = (storage : IStorage) : string =>
+    `<h2>Paths and values</h2>` + 
+    storage.documents().map(doc =>
+        `<div>📄 <code class="cPath">${safe(doc.path)}</code></div>
+        <div><pre class="cValue indent">${safe(doc.value)}</pre></div>
         <details class="indent">
             <summary>...</summary>
             ${
-                kw.items({ key: item.key, includeHistory: true, }).map((subitem, ii) => {
+                storage.documents({ path: doc.path, includeHistory: true, }).map((historyDoc, ii) => {
                     let outlineClass = ii === 0 ? 'outlined' : ''
-                    return `<pre class="small ${outlineClass}">${JSON.stringify(subitem, null, 2)}</pre>`
+                    return `<pre class="small ${outlineClass}">${JSON.stringify(historyDoc, null, 2)}</pre>`
                 }).join('\n')
             }
         </details>
@@ -237,12 +226,12 @@ let keysAndValues = (kw : IStore) : string =>
                 <td>
                     <details>
                         <summary>
-                            <code class="cKey">${safe(item.key)}</code>
+                            <code class="cPath">${safe(doc.path)}</code>
                         </summary>
-                        <pre>${JSON.stringify(item, null, 2)}</pre>
+                        <pre>${JSON.stringify(doc, null, 2)}</pre>
                     </details>
                 </td>
-                <td><code class="cValue">${safe(item.value)}</code></td>
+                <td><code class="cValue">${safe(doc.value)}</code></td>
             </tr>`).join('\n')}*/
 
 
@@ -253,7 +242,6 @@ let keysAndValues = (kw : IStore) : string =>
 export interface PubOpts {
     port : number,
     readonly : boolean,
-    allowUnsigned : boolean,
     allowPushToNewWorkspaces : boolean,
 };
 
@@ -261,20 +249,21 @@ export interface PubOpts {
 // EXPRESS
 
 export let serve = (opts : PubOpts) => {
-    // a structure to hold our Earthstar stores
-    let workspaceToStore : {[ws : string] : IStore} = {};
+    // a structure to hold our Earthstar workspaces
+    let workspaceToStore : {[ws : string] : IStorage} = {};
 
     // add the demo store
-    let demoStore = makeDemoStore(opts.allowUnsigned);
-    workspaceToStore[demoStore.workspace] = demoStore;
+    let demoStorage = makeDemoStorage();
+    workspaceToStore[demoStorage.workspace] = demoStorage;
 
-    let obtainStore = (workspace : string, createOnDemand : boolean, unsigned : boolean | undefined) : IStore | undefined => {
-        let kw = workspaceToStore[workspace];
-        if (kw !== undefined) { return kw; }
+    let obtainStorage = (workspace : string, createOnDemand : boolean) : IStorage | undefined => {
+        log('obtainStorage', workspace);
+        let storage = workspaceToStore[workspace];
+        if (storage !== undefined) { return storage; }
         if (createOnDemand) {
-            kw = new StoreMemory(getValidators(unsigned), workspace);
-            workspaceToStore[workspace] = kw;
-            return kw;
+            storage = new StorageMemory(VALIDATORS, workspace);
+            workspaceToStore[workspace] = storage;
+            return storage;
         } 
         return undefined;
     }
@@ -285,64 +274,68 @@ export let serve = (opts : PubOpts) => {
     let publicDir = path.join(__dirname, '../public/static' );
     app.use('/static', express.static(publicDir));
 
+    // for humans
     app.get('/', (req, res) => {
         let workspaces = Object.keys(workspaceToStore);
         workspaces.sort();
         res.send(listOfWorkspaces(workspaces));
     });
-
-    app.get('/earthstar/', (req, res) => {
-        res.redirect('/');
+    app.get('//:workspace', (req, res) => {
+        let workspace = '//' + req.params.workspace
+        console.log(workspace);
+        let storage = obtainStorage(workspace, false);
+        if (storage === undefined) { res.sendStatus(404); return; };
+        res.send(workspaceDetails(storage));
     });
 
-    app.get('/earthstar/:workspace', (req, res) => {
-        let es = obtainStore(req.params.workspace, false, opts.allowUnsigned);
-        if (es === undefined) { res.sendStatus(404); return; };
-        res.send(workspaceDetails(es));
+    // api
+    app.get('/earthstar-api/v1/workspace//:workspace/paths', (req, res) => {
+        let workspace = '//' + req.params.workspace
+        let storage = obtainStorage(workspace, false);
+        if (storage === undefined) { res.sendStatus(404); return; };
+        logVerbose('giving paths');
+        res.json(storage.paths());
     });
-    app.get('/earthstar/:workspace/keys', (req, res) => {
-        let es = obtainStore(req.params.workspace, false, opts.allowUnsigned);
-        if (es === undefined) { res.sendStatus(404); return; };
-        logVerbose('giving keys');
-        res.json(es.keys());
-    });
-    app.get('/earthstar/:workspace/items', (req, res) => {
-        let es = obtainStore(req.params.workspace, false, opts.allowUnsigned);
-        if (es === undefined) { res.sendStatus(404); return; };
-        logVerbose('giving items');
-        res.json(es.items({ includeHistory: true }));
-    });
-    app.post('/earthstar/:workspace/items', express.json({type: '*/*'}), (req, res) => {
-        if (opts.readonly) { res.sendStatus(403); return; }
-        let es = obtainStore(req.params.workspace, opts.allowPushToNewWorkspaces, opts.allowUnsigned);
-        if (es === undefined) { res.sendStatus(404); return; };
-        logVerbose('ingesting items');
-        let items : Item[] = req.body;
-        let numIngested = 0;
-        for (let item of items) {
-            if (es.ingestItem(item)) { numIngested += 1 }
-        }
-        res.json({
-            numIngested: numIngested,
-            numIgnored: items.length - numIngested,
-            numTotal: items.length,
-        });
+    app.get('/earthstar-api/v1/workspace//:workspace/documents', (req, res) => {
+        let workspace = '//' + req.params.workspace
+        let storage = obtainStorage(workspace, false);
+        if (storage === undefined) { res.sendStatus(404); return; };
+        logVerbose('giving documents');
+        res.json(storage.documents({ includeHistory: true }));
     });
 
-    // quick hack to allow removing workspaces from the demo pub
-    // (they will come back if you sync them again)
-    app.post('/earthstar/:workspace/delete', (req, res) => {
-        logVerbose('deleting workspace: ', req.params.workspace);
-        delete workspaceToStore[req.params.workspace];
-        res.redirect('/');
-    });
-    // quick hack to restore the demo workspace
-    app.post('/earthstar/create-demo-workspace', (req, res) => {
-        logVerbose('creating demo workspace');
-        let demoStore = makeDemoStore(opts.allowUnsigned);
-        workspaceToStore[demoStore.workspace] = demoStore;
-        res.redirect('/');
-    });
+    // TODO
+//    app.post('/earthstar/:workspace/documents', express.json({type: '*/*'}), (req, res) => {
+//        if (opts.readonly) { res.sendStatus(403); return; }
+//        let storage = obtainStorage(req.params.workspace, opts.allowPushToNewWorkspaces);
+//        if (storage === undefined) { res.sendStatus(404); return; };
+//        logVerbose('ingesting documents');
+//        let docs : Document[] = req.body;
+//        let numIngested = 0;
+//        for (let doc of docs) {
+//            if (storage.ingestDocument(doc)) { numIngested += 1 }
+//        }
+//        res.json({
+//            numIngested: numIngested,
+//            numIgnored: docs.length - numIngested,
+//            numTotal: docs.length,
+//        });
+//    });
+//
+//    // quick hack to allow removing workspaces from the demo pub
+//    // (they will come back if you sync them again)
+//    app.post('/earthstar-api/v1/workspace//:workspace/delete', (req, res) => {
+//        logVerbose('deleting workspace: ', req.params.workspace);
+//        delete workspaceToStore[req.params.workspace];
+//        res.redirect('/');
+//    });
+//    // quick hack to restore the demo workspace
+//    app.post('/demo-hack/create-demo-workspace', (req, res) => {
+//        logVerbose('creating demo workspace');
+//        let demoStore = makeDemoStore();
+//        workspaceToStore[demoStore.workspace] = demoStore;
+//        res.redirect('/');
+//    });
 
 
     app.listen(opts.port, () => log(`Listening on http://localhost:${opts.port}`));
