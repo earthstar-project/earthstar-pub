@@ -10,6 +10,8 @@ import {
     AuthorKeypair,
     StorageMemory,
     ValidatorEs2,
+    AboutLayer,
+    WikiLayer,
 } from 'earthstar';
 
 let log = console.log;
@@ -22,24 +24,23 @@ let VALIDATORS = [ValidatorEs2];
 let FORMAT = 'es.2';
 let DEMO_WORKSPACE = '//demo.xxxxxxxxxxxxxxxxxxxx';
 let makeDemoStorage = () : IStorage => {
-    let demoStore = new StorageMemory(VALIDATORS, DEMO_WORKSPACE);
-    let demoKeypair : AuthorKeypair = {
-        address: "@pubb.DGiggwVGtAkAKsntdDcCwXJbBUR8VZz1RhYePc6DgJPG",
-        secret: "HwjJZ6JywabNm9RAb21mRfCPT7qYo8ECnFJw2Afeo9MZ",
+    let storage = new StorageMemory(VALIDATORS, DEMO_WORKSPACE);
+    let keypair : AuthorKeypair = {
+        address: '@pubb.DGiggwVGtAkAKsntdDcCwXJbBUR8VZz1RhYePc6DgJPG',
+        secret: 'HwjJZ6JywabNm9RAb21mRfCPT7qYo8ECnFJw2Afeo9MZ',
     }
-    let demoAuthor = demoKeypair.address;
+    let author = keypair.address;
 
-    demoStore.set(demoKeypair, {
-        format: FORMAT,
-        path: '/wiki/shared/A%20page%20from%20the%20pub',
-        value: 'This page arrived from the pub during a sync.',
-    });
-    demoStore.set(demoKeypair, {
-        format: FORMAT,
-        path: `/about/~${demoAuthor}/name`,
-        value: 'Example Author From The Pub',
-    });
-    return demoStore;
+    let about = new AboutLayer(storage, keypair);
+    let wiki = new WikiLayer(storage, keypair);
+
+    about.setMyAuthorLongname('Example author from the pub');
+    wiki.setPageText(
+        WikiLayer.makePagePath('shared', 'A page from the pub'),
+        'This page was created on the pub as part of the demo workspace, '+
+        'so there would be some pages to sync around.'
+    );
+    return storage;
 }
 
 //================================================================================
