@@ -166,13 +166,13 @@ let listOfWorkspaces = (workspaces : string[]) : string =>
             </li>
         ` : ''}
         ${workspaces.map(ws =>
-            `<li>📂 <a href="./${safe(ws.slice(1))}"><code class="cWorkspace">${safe(ws)}</code></a></li>`
+            `<li>📂 <a href="/workspace/${safe(ws.slice(2))}"><code class="cWorkspace">${safe(ws)}</code></a></li>`
         ).join('\n')}
         </ul>
         <h2>How to use</h2>
         <p>You can sync with this pub using <a href="https://github.com/cinnamon-bun/earthstar-cli">earthstar-cli</a>.</p>
         <p>First create a local database with the same workspace name:</p>
-        <p><code>$ earthstar create localfile.sqlite ${DEMO_WORKSPACE}</code></p>
+        <p><code>$ earthstar create localfile.sqlite ${safe(DEMO_WORKSPACE)}</code></p>
         Then you can sync:
         <p><code>$ earthstar sync localfile.sqlite http://localhost:3333/</code></p>
         <hr/>
@@ -189,7 +189,7 @@ let workspaceDetails = (storage : IStorage) : string =>
         <hr />
         ${apiDocs(storage.workspace)}
         <hr />
-        <form action="/earthstar-api/v1/workspace${storage.workspace}/delete" method="post">
+        <form action="/earthstar-api/v1/workspace/${safe(storage.workspace.slice(2))}/delete" method="post">
             <input type="submit" name="upvote" value="Delete this workspace" />
         </form>
         `
@@ -197,10 +197,11 @@ let workspaceDetails = (storage : IStorage) : string =>
 
 let apiDocs = (workspace : string) =>
     `<h2>HTTP API</h2>
+    <p>Workspaces start with a double slash.  The double slash should be omitted when building these URLs.
     <ul>
-        <li>GET  <a href="/earthstar-api/v1/workspace${workspace}/paths"><code>/earthstar-api/v1/workspace//:workspace/paths</code></a> - list all paths</li>
-        <li>GET  <a href="/earthstar-api/v1/workspace${workspace}/documents"><code>/earthstar-api/v1/workspace//:workspace/documents</code></a> - list all documents (including history)</li>
-        <li>POST <code>/earthstar-api/v1/workspace//:workspace/documents</code> - upload documents (supply as a JSON array)</li>
+        <li>GET  <a href="/earthstar-api/v1/workspace/${safe(workspace.slice(2))}/paths"><code>/earthstar-api/v1/workspace/:workspace/paths</code></a> - list all paths</li>
+        <li>GET  <a href="/earthstar-api/v1/workspace/${safe(workspace.slice(2))}/documents"><code>/earthstar-api/v1/workspace/:workspace/documents</code></a> - list all documents (including history)</li>
+        <li>POST <code>/earthstar-api/v1/workspace/:workspace/documents</code> - upload documents (supply as a JSON array)</li>
     </ul>`;
 
 let pathsAndValues = (storage : IStorage) : string =>
@@ -220,21 +221,6 @@ let pathsAndValues = (storage : IStorage) : string =>
         <div>&nbsp;</div>
         `
     ).join('\n');
-
-            /*
-            `<tr>
-                <td>
-                    <details>
-                        <summary>
-                            <code class="cPath">${safe(doc.path)}</code>
-                        </summary>
-                        <pre>${JSON.stringify(doc, null, 2)}</pre>
-                    </details>
-                </td>
-                <td><code class="cValue">${safe(doc.value)}</code></td>
-            </tr>`).join('\n')}*/
-
-
 
 //================================================================================
 // COMMAND LINE
@@ -280,7 +266,12 @@ export let serve = (opts : PubOpts) => {
         workspaces.sort();
         res.send(listOfWorkspaces(workspaces));
     });
-    app.get('//:workspace', (req, res) => {
+    app.get('/workspace/:workspace', (req, res) => {
+        // A general note about workspace addresses and URLs:
+        // Earthstar workspaces start with a double slash, like "//foo.xxxxxx".
+        // Some webservers replace double slashes with single slashes, so we can't
+        // use them in our URLs.
+        // We use urls like "/workspace/foo.xxxxxx"
         let workspace = '//' + req.params.workspace
         console.log(workspace);
         let storage = obtainStorage(workspace, false);
@@ -289,14 +280,14 @@ export let serve = (opts : PubOpts) => {
     });
 
     // api
-    app.get('/earthstar-api/v1/workspace//:workspace/paths', (req, res) => {
+    app.get('/earthstar-api/v1/workspace/:workspace/paths', (req, res) => {
         let workspace = '//' + req.params.workspace
         let storage = obtainStorage(workspace, false);
         if (storage === undefined) { res.sendStatus(404); return; };
         logVerbose('giving paths');
         res.json(storage.paths());
     });
-    app.get('/earthstar-api/v1/workspace//:workspace/documents', (req, res) => {
+    app.get('/earthstar-api/v1/workspace/:workspace/documents', (req, res) => {
         let workspace = '//' + req.params.workspace
         let storage = obtainStorage(workspace, false);
         if (storage === undefined) { res.sendStatus(404); return; };
@@ -304,7 +295,7 @@ export let serve = (opts : PubOpts) => {
         res.json(storage.documents({ includeHistory: true }));
     });
 
-    app.post('/earthstar-api/v1/workspace//:workspace/documents', express.json({type: '*/*'}), (req, res) => {
+    app.post('/earthstar-api/v1/workspace/:workspace/documents', express.json({type: '*/*'}), (req, res) => {
         if (opts.readonly) { res.sendStatus(403); return; }
         let workspace = '//' + req.params.workspace
         let storage = obtainStorage(workspace, opts.allowPushToNewWorkspaces);
@@ -324,7 +315,7 @@ export let serve = (opts : PubOpts) => {
 
     // quick hack to allow removing workspaces from the demo pub
     // (they will come back if you sync them again)
-    app.post('/earthstar-api/v1/workspace//:workspace/delete', (req, res) => {
+    app.post('/earthstar-api/v1/workspace/:workspace/delete', (req, res) => {
         let workspace = '//' + req.params.workspace
         logVerbose('deleting workspace: ', workspace);
         delete workspaceToStore[workspace];
