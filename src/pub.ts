@@ -200,7 +200,7 @@ let apiDocs = (workspace : string) =>
     <ul>
         <li>GET  <a href="/earthstar-api/v1/workspace${workspace}/paths"><code>/earthstar-api/v1/workspace//:workspace/paths</code></a> - list all paths</li>
         <li>GET  <a href="/earthstar-api/v1/workspace${workspace}/documents"><code>/earthstar-api/v1/workspace//:workspace/documents</code></a> - list all documents (including history)</li>
-        <li>POST <code>/workspace/:workspace/documents</code> - upload documents (supply as a JSON array)</li>
+        <li>POST <code>/earthstar-api/v1/workspace//:workspace/documents</code> - upload documents (supply as a JSON array)</li>
     </ul>`;
 
 let pathsAndValues = (storage : IStorage) : string =>
@@ -304,38 +304,39 @@ export let serve = (opts : PubOpts) => {
         res.json(storage.documents({ includeHistory: true }));
     });
 
-    // TODO
-//    app.post('/earthstar/:workspace/documents', express.json({type: '*/*'}), (req, res) => {
-//        if (opts.readonly) { res.sendStatus(403); return; }
-//        let storage = obtainStorage(req.params.workspace, opts.allowPushToNewWorkspaces);
-//        if (storage === undefined) { res.sendStatus(404); return; };
-//        logVerbose('ingesting documents');
-//        let docs : Document[] = req.body;
-//        let numIngested = 0;
-//        for (let doc of docs) {
-//            if (storage.ingestDocument(doc)) { numIngested += 1 }
-//        }
-//        res.json({
-//            numIngested: numIngested,
-//            numIgnored: docs.length - numIngested,
-//            numTotal: docs.length,
-//        });
-//    });
-//
-//    // quick hack to allow removing workspaces from the demo pub
-//    // (they will come back if you sync them again)
-//    app.post('/earthstar-api/v1/workspace//:workspace/delete', (req, res) => {
-//        logVerbose('deleting workspace: ', req.params.workspace);
-//        delete workspaceToStore[req.params.workspace];
-//        res.redirect('/');
-//    });
-//    // quick hack to restore the demo workspace
-//    app.post('/demo-hack/create-demo-workspace', (req, res) => {
-//        logVerbose('creating demo workspace');
-//        let demoStore = makeDemoStore();
-//        workspaceToStore[demoStore.workspace] = demoStore;
-//        res.redirect('/');
-//    });
+    app.post('/earthstar-api/v1/workspace//:workspace/documents', express.json({type: '*/*'}), (req, res) => {
+        if (opts.readonly) { res.sendStatus(403); return; }
+        let workspace = '//' + req.params.workspace
+        let storage = obtainStorage(workspace, opts.allowPushToNewWorkspaces);
+        if (storage === undefined) { res.sendStatus(404); return; };
+        logVerbose('ingesting documents');
+        let docs : Document[] = req.body;
+        let numIngested = 0;
+        for (let doc of docs) {
+            if (storage.ingestDocument(doc)) { numIngested += 1 }
+        }
+        res.json({
+            numIngested: numIngested,
+            numIgnored: docs.length - numIngested,
+            numTotal: docs.length,
+        });
+    });
+
+    // quick hack to allow removing workspaces from the demo pub
+    // (they will come back if you sync them again)
+    app.post('/earthstar-api/v1/workspace//:workspace/delete', (req, res) => {
+        let workspace = '//' + req.params.workspace
+        logVerbose('deleting workspace: ', workspace);
+        delete workspaceToStore[workspace];
+        res.redirect('/');
+    });
+    // quick hack to restore the demo workspace
+    app.post('/demo-hack/create-demo-workspace', (req, res) => {
+        logVerbose('creating demo workspace');
+        let demoStore = makeDemoStorage();
+        workspaceToStore[demoStore.workspace] = demoStore;
+        res.redirect('/');
+    });
 
 
     app.listen(opts.port, () => log(`Listening on http://localhost:${opts.port}`));
