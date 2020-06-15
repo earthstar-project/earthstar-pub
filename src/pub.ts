@@ -22,7 +22,7 @@ let logVerbose = console.log;
 
 let VALIDATORS = [ValidatorEs2];
 let FORMAT = 'es.2';
-let DEMO_WORKSPACE = '//demo.xxxxxxxxxxxxxxxxxxxx';
+let DEMO_WORKSPACE = '//gardening.xxxxxxxxxxxxxxxxxxxx';
 let makeDemoStorage = () : IStorage => {
     let storage = new StorageMemory(VALIDATORS, DEMO_WORKSPACE);
     let keypair : AuthorKeypair = {
@@ -37,7 +37,7 @@ let makeDemoStorage = () : IStorage => {
     about.setMyAuthorLongname('Example author from the pub');
     wiki.setPageText(
         WikiLayer.makePagePath('shared', 'A page from the pub'),
-        'This page was created on the pub as part of the demo workspace, '+
+        'This page was created on the pub as part of the example //gardening workspace, '+
         'so there would be some pages to sync around.'
     );
     return storage;
@@ -198,7 +198,7 @@ let workspaceDetails = (storage : IStorage) : string =>
 
 let apiDocs = (workspace : string) =>
     `<h2>HTTP API</h2>
-    <p>Workspaces start with a double slash.  The double slash should be omitted when building these URLs.
+    <p>NOTE: Workspaces start with a double slash.  The double slash should be omitted when building these URLs.
     <ul>
         <li>GET  <a href="/earthstar-api/v1/workspace/${safe(workspace.slice(2))}/paths"><code>/earthstar-api/v1/workspace/:workspace/paths</code></a> - list all paths</li>
         <li>GET  <a href="/earthstar-api/v1/workspace/${safe(workspace.slice(2))}/documents"><code>/earthstar-api/v1/workspace/:workspace/documents</code></a> - list all documents (including history)</li>
