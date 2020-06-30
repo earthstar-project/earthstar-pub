@@ -199,7 +199,7 @@ let workspaceDetails = (storage : IStorage) : string =>
 
 let apiDocs = (workspace : string) =>
     `<h2>HTTP API</h2>
-    <p>NOTE: Workspaces start with a double slash.  The double slash should be omitted when building these URLs.
+    <p>Replace <code>:workspace</code> with your actual workspace address, including its leading plus character.
     <ul>
         <li>GET  <a href="/earthstar-api/v1/workspace/${safe(workspace)}/paths"><code>/earthstar-api/v1/workspace/:workspace/paths</code></a> - list all paths</li>
         <li>GET  <a href="/earthstar-api/v1/workspace/${safe(workspace)}/documents"><code>/earthstar-api/v1/workspace/:workspace/documents</code></a> - list all documents (including history)</li>
@@ -215,7 +215,6 @@ let pathsAndValues = (storage : IStorage) : string =>
             <summary>...</summary>
             ${
                 storage.documents({ path: doc.path, includeHistory: true, }).map((historyDoc, ii) => {
-                    console.log(doc.path, historyDoc.path);
                     let outlineClass = ii === 0 ? 'outlined' : ''
                     return `<pre class="small ${outlineClass}">${JSON.stringify(historyDoc, null, 2)}</pre>`
                 }).join('\n')
