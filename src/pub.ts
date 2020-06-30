@@ -201,9 +201,9 @@ let apiDocs = (workspace : string) =>
     `<h2>HTTP API</h2>
     <p>Replace <code>:workspace</code> with your actual workspace address, including its leading plus character.
     <ul>
-        <li>GET  <a href="/earthstar-api/v1/workspace/${safe(workspace)}/paths"><code>/earthstar-api/v1/workspace/:workspace/paths</code></a> - list all paths</li>
-        <li>GET  <a href="/earthstar-api/v1/workspace/${safe(workspace)}/documents"><code>/earthstar-api/v1/workspace/:workspace/documents</code></a> - list all documents (including history)</li>
-        <li>POST <code>/earthstar-api/v1/workspace/:workspace/documents</code> - upload documents (supply as a JSON array)</li>
+        <li>GET  <a href="/earthstar-api/v1/${safe(workspace)}/paths"><code>/earthstar-api/v1/:workspace/paths</code></a> - list all paths</li>
+        <li>GET  <a href="/earthstar-api/v1/${safe(workspace)}/documents"><code>/earthstar-api/v1/:workspace/documents</code></a> - list all documents (including history)</li>
+        <li>POST <code>/earthstar-api/v1/:workspace/documents</code> - upload documents (supply as a JSON array)</li>
     </ul>`;
 
 let pathsAndValues = (storage : IStorage) : string =>
@@ -277,14 +277,14 @@ export let serve = (opts : PubOpts) => {
     });
 
     // api
-    app.get('/earthstar-api/v1/workspace/:workspace/paths', (req, res) => {
+    app.get('/earthstar-api/v1/:workspace/paths', (req, res) => {
         let workspace = req.params.workspace;
         let storage = obtainStorage(workspace, false);
         if (storage === undefined) { res.sendStatus(404); return; };
         logVerbose('giving paths');
         res.json(storage.paths());
     });
-    app.get('/earthstar-api/v1/workspace/:workspace/documents', (req, res) => {
+    app.get('/earthstar-api/v1/:workspace/documents', (req, res) => {
         let workspace = req.params.workspace;
         let storage = obtainStorage(workspace, false);
         if (storage === undefined) { res.sendStatus(404); return; };
@@ -292,7 +292,7 @@ export let serve = (opts : PubOpts) => {
         res.json(storage.documents({ includeHistory: true }));
     });
 
-    app.post('/earthstar-api/v1/workspace/:workspace/documents', express.json({type: '*/*'}), (req, res) => {
+    app.post('/earthstar-api/v1/:workspace/documents', express.json({type: '*/*'}), (req, res) => {
         if (opts.readonly) { res.sendStatus(403); return; }
         let workspace = req.params.workspace;
         let storage = obtainStorage(workspace, opts.allowPushToNewWorkspaces);
@@ -312,7 +312,7 @@ export let serve = (opts : PubOpts) => {
 
     // quick hack to allow removing workspaces from the demo pub
     // (they will come back if you sync them again)
-    app.post('/earthstar-api/v1/workspace/:workspace/delete', (req, res) => {
+    app.post('/earthstar-api/v1/:workspace/delete', (req, res) => {
         let workspace = req.params.workspace;
         logVerbose('deleting workspace: ', workspace);
         delete workspaceToStore[workspace];
