@@ -1,6 +1,6 @@
 {
   "name": "earthstar-pub",
-  "version": "2.0.1",
+  "version": "2.0.2",
   "description": "Host Earthstar workspaces via HTTP",
   "repository": {
     "type": "git",
