@@ -174,7 +174,7 @@ let listOfWorkspaces = (workspaces : string[]) : string =>
         <h2>How to use</h2>
         <p>You can sync with this pub using <a href="https://github.com/cinnamon-bun/earthstar-cli">earthstar-cli</a>.</p>
         <p>First create a local database with the same workspace name:</p>
-        <p><code>$ earthstar create localfile.sqlite ${safe(DEMO_WORKSPACE)}</code></p>
+        <p><code>$ earthstar create-workspace localfile.sqlite ${safe(DEMO_WORKSPACE)}</code></p>
         Then you can sync:
         <p><code>$ earthstar sync localfile.sqlite http://localhost:3333/</code></p>
         <hr/>
