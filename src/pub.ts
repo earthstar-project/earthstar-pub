@@ -179,7 +179,7 @@ let listOfWorkspaces = (workspaces : string[]) : string =>
         Then you can sync:
         <p><code>$ earthstar sync localfile.sqlite http://localhost:3333/</code></p>
         <hr/>
-        <p><small><a href="https://github.com/cinnamon-bun/earthstar">Earthstar on Github</a></small></p>
+        <p><small><a href="https://github.com/earthstar-project/earthstar">Earthstar on Github</a></small></p>
         `
     );
 
