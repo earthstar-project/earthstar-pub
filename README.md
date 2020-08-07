@@ -1,8 +1,6 @@
 # Earthstar Pub
 
-Hosts [Earthstar](https://github.com/cinnamon-bun/earthstar) workspaces via HTTP.
-
-One pub server can hold multiple Earthstar workspaces.
+Hosts and syncs [Earthstar](https://github.com/cinnamon-bun/earthstar) workspaces over HTTP.  One pub server can hold multiple Earthstar workspaces.
 
 You can
 * View the data through a web interface
@@ -10,16 +8,47 @@ You can
 
 Pub servers don't sync directly to each other (yet?).
 
-## Usage
+## Caveats
 
-Start the server with
+This is for demonstration purposes, so it shows all the workspaces and data over the web.  Normally Earthstar pubs should not reveal which workspaces they hold.
+
+It stores data in memory, not on disk, so it will forget everything if restarted.  Note that glitch.com restarts projects often.
+
+There's an [issue](https://github.com/earthstar-project/earthstar-pub/issues/1) describing how to store data in SQLite for persistence.
+
+## Demo
+
+https://earthstar-demo-pub-v5-a.glitch.me/
+
+![](img/pub-homepage.png)
+
+![](img/pub-workspace.png)
+
+## Running on Glitch
+
+Make your own copy on Glitch by going [here](https://glitch.com/~earthstar-demo-pub-v5-a) and clicking "Remix this".
+
+Or start a new Glitch project from scratch:
+
+* Make a new Express project
+* Go to Glitch's `package.json`, click "Add package", and add `earthstar-pub`
+* Delete the demo code from `server.js`
+* Copy-paste the code from this repo's [`example.js`](https://github.com/earthstar-project/earthstar-pub/blob/master/example.js) into Glitch's `server.js`
+* Rename your project, at the top left
+* Click "🕶 Show > In a New Window" to visit your pub
+
+## Easy command-line install
+
+Install
 ```
-npm start
+npm install --global earthstar-pub
 ```
-or
+
+Run
 ```
 earthstar-pub
 ```
+
 Then visit http://localhost:3333.
 
 Options:
@@ -29,12 +58,32 @@ Usage: earthstar-pub [options]
 Run an HTTP server which hosts and replicates Earthstar workspaces.
 
 Options:
-  -p, --port <port>  which port to serve on (default: "3333")
-  --readonly         don't accept any pushed data from users (default: false)
-  -c, --closed       accept data to existing workspaces but don't create new workspaces.
+  -p, --port <port>  Which port to serve on (default: "3333")
+  --readonly         Don't accept any pushed data from users (default: false)
+  -c, --closed       Accept data to existing workspaces but don't create new workspaces.
                      (default: false)
   --unsigned         Allow/create messages of type "unsigned.1" which do not have signatures.
                      This is insecure.  Only use it for testing.
   -h, --help         display help for command
 ```
 
+## Developing
+
+Clone and install
+```
+git clone https://github.com/earthstar-project/earthstar-pub
+cd earthstar-pub
+npm install
+```
+
+Compile typescript
+```
+npm run build
+```
+
+Start the server
+```
+npm start
+```
+
+Then visit http://localhost:3333.

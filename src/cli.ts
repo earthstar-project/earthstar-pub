@@ -7,9 +7,9 @@ let program = new commander.Command();
 program
     .name('earthstar-pub')
     .description('Run an HTTP server which hosts and replicates Earthstar workspaces.')
-    .option('-p, --port <port>', 'which port to serve on', '3333')
-    .option('--readonly', "don't accept any pushed data from users", false)
-    .option('-c, --closed', "accept data to existing workspaces but don't create new workspaces.", false);
+    .option('-p, --port <port>', 'Which port to serve on', '3333')
+    .option('--readonly', "Don't accept any pushed data from users", false)
+    .option('-c, --closed', "Accept data to existing workspaces but don't create new workspaces.", false);
     //.option('-d, --dbfile <filename>', 'filename for sqlite database.  if omitted, data is only kept in memory')
     
 program.parse(process.argv);
