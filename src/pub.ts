@@ -11,7 +11,8 @@ import {
     LayerAbout,
     LayerWiki,
     StorageMemory,
-    ValidatorEs3,
+    ValidatorEs4,
+    WriteResult,
 } from 'earthstar';
 
 let log = console.log;
@@ -20,25 +21,25 @@ let logVerbose = console.log;
 //================================================================================
 // EARTHSTAR SETUP
 
-let VALIDATORS = [ValidatorEs3];
-let FORMAT = 'es.3';
-let DEMO_WORKSPACE = '+gardening.xxxxxxxxxxxxxxxxxxxx';
+let VALIDATORS = [ValidatorEs4];
+let FORMAT = 'es.4';
+let DEMO_WORKSPACE = '+gardening.pals';
 let makeDemoStorage = () : IStorage => {
     let storage = new StorageMemory(VALIDATORS, DEMO_WORKSPACE);
     let keypair : AuthorKeypair = {
-        address: '@pubb.DGiggwVGtAkAKsntdDcCwXJbBUR8VZz1RhYePc6DgJPG',
-        secret: 'HwjJZ6JywabNm9RAb21mRfCPT7qYo8ECnFJw2Afeo9MZ',
+        address: "@bird.btr46n7ij6eq6hwnpvfcdakxqy3e6vz4e5vmw33ur7tjey5dkx6ea",
+        secret: "bcrmyrih74d5mpvaco3tjrawgzebnmzyqdxvxnvg2hvnsfdj3izga"
     }
     let author = keypair.address;
 
     let about = new LayerAbout(storage);
     let wiki = new LayerWiki(storage);
 
-    about.setMyAuthorLongname(keypair, 'Example author from the pub');
+    about.setMyAuthorProfile(keypair, {longname: 'Bird, the example author'});
     wiki.setPageText(
         keypair,
         LayerWiki.makePagePath('shared', 'A page from the pub'),
-        'This page was created on the pub as part of the example +gardening workspace, '+
+        `This page was created on the pub as part of the example ${DEMO_WORKSPACE} workspace, ` +
         'so there would be some pages to sync around.'
     );
     return storage;
@@ -90,7 +91,7 @@ let htmlHeaderAndFooter = (page : string) : string =>
                 --round: var(--s0);
 
                 --cPath: #ffe2b8;
-                --cValue: #c9fcb7;
+                --cContent: #c9fcb7;
                 --cWorkspace: #c5e8ff;
                 --cAuthor: #f6cdff;
 
@@ -105,7 +106,7 @@ let htmlHeaderAndFooter = (page : string) : string =>
                 --cYellow: #fef8bb;
             }
             .cPath { background: var(--cPath); }
-            .cValue { background: var(--cValue); }
+            .cContent { background: var(--cContent); }
             .cWorkspace { background: var(--cWorkspace); }
             .cAuthor { background: var(--cAuthor); }
             a code {
@@ -187,7 +188,7 @@ let workspaceDetails = (storage : IStorage) : string =>
         `<p><a href="/">&larr; Home</a></p>
         <h2>📂 Workspace: <code class="cWorkspace">${safe(storage.workspace)}</code></h2>
         <hr />
-        ${pathsAndValues(storage)}
+        ${pathsAndContents(storage)}
         <hr />
         ${apiDocs(storage.workspace)}
         <hr />
@@ -206,11 +207,11 @@ let apiDocs = (workspace : string) =>
         <li>POST <code>/earthstar-api/v1/:workspace/documents</code> - upload documents (supply as a JSON array)</li>
     </ul>`;
 
-let pathsAndValues = (storage : IStorage) : string =>
-    `<h2>Paths and values</h2>` + 
+let pathsAndContents = (storage : IStorage) : string =>
+    `<h2>Paths and contents</h2>` + 
     storage.documents().map(doc =>
         `<div>📄 <code class="cPath">${safe(doc.path)}</code></div>
-        <div><pre class="cValue indent">${safe(doc.value)}</pre></div>
+        <div><pre class="cContent indent">${safe(doc.content)}</pre></div>
         <details class="indent">
             <summary>...</summary>
             ${
@@ -301,11 +302,11 @@ export let serve = (opts : PubOpts) => {
         let docs : Document[] = req.body;
         let numIngested = 0;
         for (let doc of docs) {
-            if (storage.ingestDocument(doc)) { numIngested += 1 }
+            if (storage.ingestDocument(doc) === WriteResult.Accepted) { numIngested += 1 }
         }
         res.json({
             numIngested: numIngested,
-            numIgnored: docs.length - numIngested,
+            numIgnored: docs.length - numIngested,  // ignored or failed validation check
             numTotal: docs.length,
         });
     });
