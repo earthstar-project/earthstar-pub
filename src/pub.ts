@@ -35,7 +35,7 @@ let makeDemoStorage = () : IStorage => {
     let about = new LayerAbout(storage);
     let wiki = new LayerWiki(storage);
 
-    about.setMyAuthorProfile(keypair, {longname: 'Bird, the example author'});
+    about.setMyAuthorProfile(keypair, {displayName: 'Bird, the example author'});
     wiki.setPageText(
         keypair,
         LayerWiki.makePagePath('shared', 'A page from the pub'),
