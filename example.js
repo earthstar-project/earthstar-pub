@@ -1,27 +1,19 @@
 "use strict";
 
 /*
-
-This file will work as a standalone pub on glitch.com.
-It will import the rest of the earthstar-pub package from npm.
-*/
-
-/*
-or to use this example in a new directory, locally:
-
-mkdir my-pub
-cd my-pub
-npm init
-npm install --save earthstar-pub
-(... copy and paste example.js file into this directory ...)
-node example.js
+    This file will work as a standalone pub on glitch.com.
+    It will import the rest of the earthstar-pub package from npm.
 */
 
 const pub = require('earthstar-pub');
+
+const port = 8080;
 pub.serve({
-    port: 8080,
-    readonly: false,
-    allowPushToNewWorkspaces: true,
+    port: port,
+    readonly: false,  // if true, don't accept any new data from users to any workspace
+    allowPushToNewWorkspaces: true,  // if true, let users add new workspaces
+    discoverable: false,  // if true, show workspace addesses in the web interface
 });
-console.log('running!');
+
+console.log(`earthstar-pub is running on port ${port}.  ${new Date()}`);
 

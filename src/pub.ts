@@ -13,6 +13,8 @@ import {
     StorageMemory,
     ValidatorEs4,
     WriteResult,
+    workspaceAddressChars,
+    WorkspaceAddress,
 } from 'earthstar';
 
 let log = console.log;
@@ -155,48 +157,65 @@ let htmlHeaderAndFooter = (page : string) : string =>
     </body>
     </html>`
 
-let listOfWorkspaces = (workspaces : string[]) : string =>
-    htmlHeaderAndFooter(
+let listOfWorkspaces = (workspaces : string[], discoverableWorkspaces : boolean) : string => {
+    let workspaceSection = `
+        <p>This is a pub server hosting <b>${workspaces.length}</b> unlisted workspaces.</p>
+        <p>If you know the workspace address, you can manually craft an URL to visit it:</p>
+        <p><code><a href="/workspace/+your.workspace">/workspace/+your.workspace</a></code></p>
+    `;
+    if (discoverableWorkspaces) {
+        workspaceSection = `
+            <p>This is a pub server hosting the following workspaces:</p>
+            <ul>
+            ${workspaces.length === 0 ? `
+                <li><i>No workspaces yet.  Create one by syncing with this pub, or</i></li>
+                    <form action="/demo-hack/create-demo-workspace" method="post">
+                        <input type="submit" name="make-demo" value="Create a demo workspace" />
+                    </form>
+                </li>
+            ` : ''}
+            ${workspaces.map(ws =>
+                `<li>📂 <a href="/workspace/${safe(ws)}"><code class="cWorkspace">${safe(ws)}</code></a></li>`
+            ).join('\n')}
+            </ul>
+        `;
+    }
+    return htmlHeaderAndFooter(
         `<p><img src="/static/img/earthstar-logo-only.png" alt="earthstar logo" width=127 height=129 /></p>
         <h1>🗃 Earthstar Pub</h1>
-        <p>This is a demo pub server hosting the following workspaces:</p>
-        <ul>
-        ${workspaces.length === 0 ? `
-            <li><i>No workspaces yet.  Create one by syncing with this pub, or</i></li>
-                <form action="/demo-hack/create-demo-workspace" method="post">
-                    <input type="submit" name="make-demo" value="Create a demo workspace" />
-                </form>
-            </li>
-        ` : ''}
-        ${workspaces.map(ws =>
-            `<li>📂 <a href="/workspace/${safe(ws)}"><code class="cWorkspace">${safe(ws)}</code></a></li>`
-        ).join('\n')}
-        </ul>
-        <h2>How to use</h2>
-        <p>You can sync with this pub using <a href="https://github.com/cinnamon-bun/earthstar-cli">earthstar-cli</a>.</p>
-        <p>First create a local database with the same workspace name:</p>
-        <p><code>$ earthstar create-workspace localfile.sqlite ${safe(DEMO_WORKSPACE)}</code></p>
-        Then you can sync:
-        <p><code>$ earthstar sync localfile.sqlite http://localhost:3333/</code></p>
+        ${workspaceSection}
+        <hr/>
+        ${apiDocs('+exampleworkspace.12345')}
+        <hr/>
+        ${cliDocs('+exampleworkspace.12345')}
         <hr/>
         <p><small><a href="https://github.com/earthstar-project/earthstar">Earthstar on Github</a></small></p>
         `
     );
+}
 
 let workspaceDetails = (storage : IStorage) : string =>
     htmlHeaderAndFooter(
         `<p><a href="/">&larr; Home</a></p>
         <h2>📂 Workspace: <code class="cWorkspace">${safe(storage.workspace)}</code></h2>
+        <p>
+            <form action="/earthstar-api/v1/${safe(storage.workspace)}/delete" method="post">
+                <input type="submit" name="upvote" value="Delete this workspace" />
+            </form>
+        </p>
         <hr />
         ${pathsAndContents(storage)}
-        <hr />
-        ${apiDocs(storage.workspace)}
-        <hr />
-        <form action="/earthstar-api/v1/workspace/${safe(storage.workspace)}/delete" method="post">
-            <input type="submit" name="upvote" value="Delete this workspace" />
-        </form>
         `
     );
+
+let cliDocs = (workspaceAddress : WorkspaceAddress) : string =>
+    `<h2>Sync with command line</h2>
+    <p>You can sync with this pub using <a href="https://github.com/cinnamon-bun/earthstar-cli">earthstar-cli</a>.</p>
+    <p>First create a local database with the same workspace name:</p>
+    <p><code>$ earthstar create-workspace localfile.sqlite +exampleworkspace.12345</code></p>
+    Then you can sync:
+    <p><code>$ earthstar sync localfile.sqlite http://pub-url.com</code></p>
+    `
 
 let apiDocs = (workspace : string) =>
     `<h2>HTTP API</h2>
@@ -226,18 +245,18 @@ let pathsAndContents = (storage : IStorage) : string =>
     ).join('\n');
 
 //================================================================================
-// COMMAND LINE
+// EXPRESS SERVER
 
 export interface PubOpts {
     port : number,
     readonly : boolean,
     allowPushToNewWorkspaces : boolean,
+    discoverableWorkspaces : boolean,
 };
 
-//================================================================================
-// EXPRESS
+export let makeExpressApp = (opts : PubOpts) => {
+    // returns an Express app but does not start running it.
 
-export let serve = (opts : PubOpts) => {
     // a structure to hold our Earthstar workspaces
     let workspaceToStore : {[ws : string] : IStorage} = {};
 
@@ -267,7 +286,7 @@ export let serve = (opts : PubOpts) => {
     app.get('/', (req, res) => {
         let workspaces = Object.keys(workspaceToStore);
         workspaces.sort();
-        res.send(listOfWorkspaces(workspaces));
+        res.send(listOfWorkspaces(workspaces, opts.discoverableWorkspaces));
     });
     app.get('/workspace/:workspace', (req, res) => {
         let workspace = req.params.workspace;
@@ -327,6 +346,13 @@ export let serve = (opts : PubOpts) => {
         res.redirect('/');
     });
 
+    return app;
+}
 
+export let serve = (opts : PubOpts) => {
+    // Make and start the Express server.
+
+    console.log(opts);
+    let app = makeExpressApp(opts);
     app.listen(opts.port, () => log(`Listening on http://localhost:${opts.port}`));
 }
