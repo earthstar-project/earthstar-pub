@@ -58,13 +58,20 @@ Usage: earthstar-pub [options]
 Run an HTTP server which hosts and replicates Earthstar workspaces.
 
 Options:
-  -p, --port <port>  Which port to serve on (default: "3333")
-  --readonly         Don't accept any pushed data from users (default: false)
-  -c, --closed       Accept data to existing workspaces but don't create new workspaces.
-                     (default: false)
-  --unsigned         Allow/create messages of type "unsigned.1" which do not have signatures.
-                     This is insecure.  Only use it for testing.
-  -h, --help         display help for command
+  -p, --port <port>   Which port to serve on
+                        (default: "3333")
+
+  --readonly          Don't accept any pushed data from users
+                        (default: false)
+
+  -c, --closed        Accept data to existing workspaces but
+                        don't create new workspaces.
+                        (default: false)
+
+  -d, --discoverable  Allow workspace addresses to be discovered
+                        via the web interface.  Only use
+                        this for testing purposes.
+                        (default: false)
 ```
 
 ## Developing
