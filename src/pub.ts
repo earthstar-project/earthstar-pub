@@ -20,9 +20,6 @@ import {
     isErr,
 } from 'earthstar';
 
-let log = console.log;
-let logVerbose = console.log;
-
 //================================================================================
 // EARTHSTAR SETUP
 
@@ -256,16 +253,53 @@ export interface PubOpts {
     discoverableWorkspaces : boolean,
     storageType : 'sqlite' | 'memory',
     dataFolder? : string,  // only needed for sqlite
+    logLevel? : number,  // 0 none, 1 basic, 2 verbose, 3 sensitive
 };
+
+let workspaceToFilename = (dataFolder: string, workspace: WorkspaceAddress) =>
+    path.join(dataFolder || '.', workspace.slice(1) + '.sqlite');
+let filenameToWorkspace = (filename: string) => {
+    if (filename.endsWith('.sqlite')) {
+        filename = filename.slice(0, -7);
+    }
+    return '+' + path.basename(filename);
+}
 
 export let makeExpressApp = (opts : PubOpts) => {
     // returns an Express app but does not start running it.
 
+    let logBasic = (...args: any[]) => {
+        if (opts.logLevel && opts.logLevel >= 1) { console.log(...args); }
+    }
+    let logVerbose = (...args: any[]) => {
+        if (opts.logLevel && opts.logLevel >= 2) { console.log(...args); }
+    }
+    let logSensitive = (...args: any[]) => {
+        if (opts.logLevel && opts.logLevel >= 3) { console.log(...args); }
+    }
+
     // a structure to hold our Earthstar workspaces
     let workspaceToStore : {[ws : string] : IStorage} = {};
 
+    // load existing files
+    if (opts.storageType === 'sqlite' && opts.dataFolder !== undefined) {
+        logVerbose('loading existing sqlite files');
+        let files = fs.readdirSync(opts.dataFolder).filter(f => f.endsWith('.sqlite'));
+        for (let fn of files) {
+            let workspace = filenameToWorkspace(fn);
+            logSensitive('    loading', fn, 'as workspace', workspace);
+            let storage = new StorageSqlite({
+                mode: 'create-or-open',
+                workspace: workspace,
+                validators: VALIDATORS,
+                filename: fn,
+            });
+            logVerbose('    loaded');
+        }
+    }
+
     let obtainStorage = (workspace : string, createOnDemand : boolean, opts : PubOpts) : IStorage | undefined => {
-        log('obtainStorage', workspace);
+        logSensitive('obtainStorage', workspace);
         let storage = workspaceToStore[workspace];
         if (storage !== undefined) { return storage; }
         if (!createOnDemand) { return undefined; }
@@ -278,12 +312,13 @@ export let makeExpressApp = (opts : PubOpts) => {
                 // make sure workspace address is valid so we know it will be a safe filename
                 let err = VALIDATORS[0]._checkWorkspaceIsValid(workspace);
                 if (isErr(err)) {
-                    console.log(err);
+                    console.error(err);
+                    console.error(workspace);
                     return undefined;
                 }
                 // build filename
                 let filename = path.join(opts.dataFolder || '.', workspace.slice(1) + '.sqlite');  // remove '+'
-                console.log('sqlite filename:', filename);
+                logSensitive('    sqlite filename:', filename);
                 storage = new StorageSqlite({
                     mode: 'create-or-open',
                     workspace: workspace,
@@ -291,8 +326,8 @@ export let makeExpressApp = (opts : PubOpts) => {
                     filename: filename,
                 });
             } catch (err) {
-                console.warn('error creating sqlite file:');
-                console.warn(err);
+                console.error('error creating sqlite file:');
+                console.error(err);
                 return undefined;
             }
         }
@@ -316,13 +351,14 @@ export let makeExpressApp = (opts : PubOpts) => {
 
     // for humans
     app.get('/', (req, res) => {
+        logVerbose('/');
         let workspaces = Object.keys(workspaceToStore);
         workspaces.sort();
         res.send(listOfWorkspaces(workspaces, opts.discoverableWorkspaces));
     });
     app.get('/workspace/:workspace', (req, res) => {
+        logVerbose('workspace view');
         let workspace = req.params.workspace;
-        console.log(workspace);
         let storage = obtainStorage(workspace, false, opts);
         if (storage === undefined) { res.sendStatus(404); return; };
         res.send(workspaceDetails(storage));
@@ -330,26 +366,26 @@ export let makeExpressApp = (opts : PubOpts) => {
 
     // api
     app.get('/earthstar-api/v1/:workspace/paths', (req, res) => {
+        logVerbose('giving paths');
         let workspace = req.params.workspace;
         let storage = obtainStorage(workspace, false, opts);
         if (storage === undefined) { res.sendStatus(404); return; };
-        logVerbose('giving paths');
         res.json(storage.paths());
     });
     app.get('/earthstar-api/v1/:workspace/documents', (req, res) => {
+        logVerbose('giving documents');
         let workspace = req.params.workspace;
         let storage = obtainStorage(workspace, false, opts);
         if (storage === undefined) { res.sendStatus(404); return; };
-        logVerbose('giving documents');
         res.json(storage.documents({ includeHistory: true }));
     });
 
     app.post('/earthstar-api/v1/:workspace/documents', express.json({type: '*/*'}), (req, res) => {
+        logVerbose('ingesting documents');
         if (opts.readonly) { res.sendStatus(403); return; }
         let workspace = req.params.workspace;
         let storage = obtainStorage(workspace, opts.allowPushToNewWorkspaces, opts);
         if (storage === undefined) { res.sendStatus(404); return; };
-        logVerbose('ingesting documents');
         let docs : Document[] = req.body;
         let numIngested = 0;
         for (let doc of docs) {
@@ -365,8 +401,8 @@ export let makeExpressApp = (opts : PubOpts) => {
     // quick hack to allow removing workspaces from the demo pub
     // (they will come back if you sync them again)
     app.post('/earthstar-api/v1/:workspace/delete', (req, res) => {
+        logVerbose('deleting workspace');
         let workspace = req.params.workspace;
-        logVerbose('deleting workspace: ', workspace);
         delete workspaceToStore[workspace];
         res.redirect('/');
     });
@@ -386,7 +422,6 @@ export let makeExpressApp = (opts : PubOpts) => {
 
 export let serve = (opts : PubOpts) => {
     // Make and start the Express server.
-
     console.log(opts);
     if (opts.storageType === 'sqlite') {
         if (opts.dataFolder === undefined) {
@@ -399,5 +434,5 @@ export let serve = (opts : PubOpts) => {
         }
     }
     let app = makeExpressApp(opts);
-    app.listen(opts.port, () => log(`Listening on http://localhost:${opts.port}`));
+    app.listen(opts.port, () => console.log(`Listening on http://localhost:${opts.port}`));
 }

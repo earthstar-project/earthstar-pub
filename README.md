@@ -81,6 +81,11 @@ Options:
                         Defaults to current directory.
                         Only used for sqlite, not memory.
                         (default: ".")
+                      
+  --logLevel <logLevel>
+                      Show this many logs. 0 = none, 1 = basic, 2 = verbose,
+                        3 = include sensitive information (workspace addresses).
+                        (default: "0")
 ```
 
 ## Developing
