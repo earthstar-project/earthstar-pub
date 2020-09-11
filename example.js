@@ -13,6 +13,8 @@ pub.serve({
     readonly: false,  // if true, don't accept any new data from users to any workspace
     allowPushToNewWorkspaces: true,  // if true, let users add new workspaces
     discoverable: false,  // if true, show workspace addesses in the web interface
+    storageType: 'sqlite',  // use sqlite instead of memory to store data
+    dataFolder: '.data',  // put sqlite files here
 });
 
 console.log(`earthstar-pub is running on port ${port}.  ${new Date()}`);

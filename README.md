@@ -72,6 +72,15 @@ Options:
                         via the web interface.  Only use
                         this for testing purposes.
                         (default: false)
+
+  -s, --sqlite        Use sqlite instead of memory.  Default is memory.
+                        (default: false)
+
+  --dataFolder <folder>
+                      Folder in which to store sqlite files.
+                        Defaults to current directory.
+                        Only used for sqlite, not memory.
+                        (default: ".")
 ```
 
 ## Developing

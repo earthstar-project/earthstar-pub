@@ -10,8 +10,9 @@ program
     .option('-p, --port <port>', 'Which port to serve on', '3333')
     .option('--readonly', "Don't accept any pushed data from users", false)
     .option('-c, --closed', "Accept data to existing workspaces but don't create new workspaces.", false)
-    .option('-d, --discoverable', "Allow workspace addresses to be discovered via the web interface.  Only use this for testing purposes.", false);
-    //.option('-d, --dbfile <filename>', 'filename for sqlite database.  if omitted, data is only kept in memory')
+    .option('-d, --discoverable', "Allow workspace addresses to be discovered via the web interface.  Only use this for testing purposes.", false)
+    .option('-s, --sqlite', 'Use sqlite instead of memory.  Default is memory.', false)
+    .option('--dataFolder <folder>', 'Folder in which to store sqlite files.  Defaults to current directory.  Only used for sqlite, not memory.', '.');
     
 program.parse(process.argv);
 
@@ -20,4 +21,6 @@ serve({
     readonly: program.readonly,
     allowPushToNewWorkspaces: !(program.closed || program.readonly),
     discoverableWorkspaces: program.discoverable,
+    storageType: program.sqlite ? 'sqlite' : 'memory',
+    dataFolder: program.dataFolder,
 });
