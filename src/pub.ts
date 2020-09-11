@@ -279,7 +279,7 @@ export let makeExpressApp = (opts : PubOpts) => {
     }
 
     // a structure to hold our Earthstar workspaces
-    let workspaceToStore : {[ws : string] : IStorage} = {};
+    let workspaceToStorage : {[ws : string] : IStorage} = {};
 
     // load existing files
     if (opts.storageType === 'sqlite' && opts.dataFolder !== undefined) {
@@ -292,15 +292,16 @@ export let makeExpressApp = (opts : PubOpts) => {
                 mode: 'create-or-open',
                 workspace: workspace,
                 validators: VALIDATORS,
-                filename: fn,
+                filename: path.join(opts.dataFolder, fn),
             });
+            workspaceToStorage[workspace] = storage;
             logVerbose('    loaded');
         }
     }
 
     let obtainStorage = (workspace : string, createOnDemand : boolean, opts : PubOpts) : IStorage | undefined => {
         logSensitive('obtainStorage', workspace);
-        let storage = workspaceToStore[workspace];
+        let storage = workspaceToStorage[workspace];
         if (storage !== undefined) { return storage; }
         if (!createOnDemand) { return undefined; }
 
@@ -331,7 +332,7 @@ export let makeExpressApp = (opts : PubOpts) => {
                 return undefined;
             }
         }
-        workspaceToStore[workspace] = storage;
+        workspaceToStorage[workspace] = storage;
         return storage;
     } 
 
@@ -339,7 +340,7 @@ export let makeExpressApp = (opts : PubOpts) => {
     let demoStorage = obtainStorage(DEMO_WORKSPACE, true, opts);
     if (demoStorage !== undefined) {
         setUpDemoStorage(demoStorage);
-        workspaceToStore[demoStorage.workspace] = demoStorage;
+        workspaceToStorage[demoStorage.workspace] = demoStorage;
     }
 
     // make express app
@@ -352,7 +353,7 @@ export let makeExpressApp = (opts : PubOpts) => {
     // for humans
     app.get('/', (req, res) => {
         logVerbose('/');
-        let workspaces = Object.keys(workspaceToStore);
+        let workspaces = Object.keys(workspaceToStorage);
         workspaces.sort();
         res.send(listOfWorkspaces(workspaces, opts.discoverableWorkspaces));
     });
@@ -403,7 +404,7 @@ export let makeExpressApp = (opts : PubOpts) => {
     app.post('/earthstar-api/v1/:workspace/delete', (req, res) => {
         logVerbose('deleting workspace');
         let workspace = req.params.workspace;
-        delete workspaceToStore[workspace];
+        delete workspaceToStorage[workspace];
         res.redirect('/');
     });
     // quick hack to restore the demo workspace
@@ -412,7 +413,7 @@ export let makeExpressApp = (opts : PubOpts) => {
         let demoStorage = obtainStorage(DEMO_WORKSPACE, true, opts);
         if (demoStorage !== undefined) {
             setUpDemoStorage(demoStorage);
-            workspaceToStore[demoStorage.workspace] = demoStorage;
+            workspaceToStorage[demoStorage.workspace] = demoStorage;
         }
         res.redirect('/');
     });
