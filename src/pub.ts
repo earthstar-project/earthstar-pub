@@ -4,6 +4,7 @@ import fs = require('fs');
 import path = require('path');
 import express = require('express');
 import cors = require('cors');
+import { sseMiddleware } from 'express-sse-middleware';
 
 import {
     AuthorKeypair,
@@ -12,11 +13,10 @@ import {
     LayerAbout,
     LayerWiki,
     StorageMemory,
-    ValidatorEs4,
-    WriteResult,
-    workspaceAddressChars,
-    WorkspaceAddress,
     StorageSqlite,
+    ValidatorEs4,
+    WorkspaceAddress,
+    WriteResult,
     isErr,
 } from 'earthstar';
 
@@ -346,6 +346,7 @@ export let makeExpressApp = (opts : PubOpts) => {
     // make express app
     let app = express();
     app.use(cors());
+    app.use(sseMiddleware);
 
     let publicDir = path.join(__dirname, '../public/static' );
     app.use('/static', express.static(publicDir));
@@ -416,6 +417,64 @@ export let makeExpressApp = (opts : PubOpts) => {
             workspaceToStorage[demoStorage.workspace] = demoStorage;
         }
         res.redirect('/');
+    });
+
+    app.get('/earthstar-api/v1/:workspace/stream', (req, res) => {
+        // Create a stream of server-sent events for the new write events in a workspace.
+        // Return a stream of all newly occurring documents (encoded as JSON).
+        // Existing documents will not be included.
+        // Also send a keepalive event occasionally, which is just the string 'KEEPALIVE'.
+        // If the workspace doesn't exist, return 404 right away.
+        //
+        // The stream is not smart about who sent in documents; if you push documents
+        // to a pub they will come right back to you in the stream.
+        //
+        // When a client is about to sync with the server, it should, in this order:
+        // 1. If a stream is running, stop it
+        // 2. Do a regular push
+        // 3. Start this stream
+        // 4. Do a regular pull
+        //
+        // This will ensure that
+        // * the workspace exists before we start the stream
+        // * the pull and stream together will get all documents without missing any
+        // * the pushed documents aren't just echoed back immediately in the stream
+        //
+        // A client that wishes to upload (push) documents individually as they change
+        // may just POST them to the regular push endpoint as they occur.
+        // They will be echoed back in the stream which wastes bandwidth but won't
+        // break anything.
+
+        let workspace = req.params.workspace;
+        let storage = workspaceToStorage[workspace];
+
+        if (!storage) {
+            console.log('stream: workspace does not exist: ' + workspace);
+            res.sendStatus(404);
+            return;
+        }
+        console.log('stream: subscribing to ' + workspace);
+
+        let sse = res.sse();
+
+        sse.send('KEEPALIVE');
+        res.write(':\n\n');  // SSE comment
+        let keepaliveInterval = setInterval(() => {
+            console.log('stream: keepalive');
+            res.write(':\n\n');  // SSE comment
+            sse.send('KEEPALIVE');
+        }, 5000);
+
+        let unsub = storage.onWrite.subscribe(e => {
+            console.log('stream: event from ' + workspace);
+            sse.send(JSON.stringify(e.document));
+        });
+
+        req.on('close', () => {
+            console.log('stream: closing stream: ' + workspace);
+            clearInterval(keepaliveInterval);
+            unsub();
+        });
     });
 
     return app;
