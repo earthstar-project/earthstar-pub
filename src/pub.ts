@@ -463,7 +463,7 @@ export let makeExpressApp = (opts : PubOpts) => {
             console.log('stream: keepalive');
             res.write(':\n\n');  // SSE comment
             sse.send('KEEPALIVE');
-        }, 5000);
+        }, 28 * 1000);  // every 28 seconds
 
         let unsub = storage.onWrite.subscribe(e => {
             console.log('stream: event from ' + workspace);
