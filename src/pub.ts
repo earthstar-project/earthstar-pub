@@ -3,6 +3,7 @@
 import fs = require('fs');
 import path = require('path');
 import express = require('express');
+import bodyParser = require('body-parser');
 import cors = require('cors');
 import { sseMiddleware } from 'express-sse-middleware';
 
@@ -347,6 +348,11 @@ export let makeExpressApp = (opts : PubOpts) => {
     let app = express();
     app.use(cors());
     app.use(sseMiddleware);
+
+    // This solves an error when uploaded JSON payload is larger than approx 100kb
+    // (when syncing up lots of data at once)
+    //      PayloadTooLargeError: request entity too large
+    app.use(bodyParser.json({ limit: '10mb' }));
 
     let publicDir = path.join(__dirname, '../public/static' );
     app.use('/static', express.static(publicDir));
