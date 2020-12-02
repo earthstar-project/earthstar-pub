@@ -194,7 +194,7 @@ let workspaceDetails = (storage : IStorage) : string =>
         <h2>📂 Workspace: <code class="cWorkspace">${safe(storage.workspace)}</code></h2>
         <p>
             <form action="/earthstar-api/v1/${safe(storage.workspace)}/delete" method="post">
-                <input type="submit" name="upvote" value="Delete this workspace" />
+                <input type="submit" name="upvote" value="Delete this workspace" /> (It will come back if clients sync it again.)
             </form>
         </p>
         <hr />
@@ -405,6 +405,7 @@ export let makeExpressApp = (opts : PubOpts) => {
     app.post('/earthstar-api/v1/:workspace/delete', (req, res) => {
         logVerbose('deleting workspace');
         let workspace = req.params.workspace;
+        workspaceToStorage[workspace].close();
         delete workspaceToStorage[workspace];
         res.redirect('/');
     });
