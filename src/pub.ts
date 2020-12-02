@@ -11,8 +11,6 @@ import {
     AuthorKeypair,
     Document,
     IStorage,
-    LayerAbout,
-    LayerWiki,
     StorageMemory,
     StorageSqlite,
     ValidatorEs4,
@@ -35,16 +33,12 @@ let setUpDemoStorage = (storage : IStorage) => {
     }
     let author = keypair.address;
 
-    let about = new LayerAbout(storage);
-    let wiki = new LayerWiki(storage);
-
-    about.setMyAuthorProfile(keypair, {displayName: 'Bird, the example author'});
-    wiki.setPageText(
-        keypair,
-        LayerWiki.makePagePath('shared', 'A page from the pub'),
-        `This page was created on the pub as part of the example ${DEMO_WORKSPACE} workspace, ` +
-        'so there would be some pages to sync around.'
-    );
+    let aboutPath = `/about/~${keypair.address}/displayName.txt`;
+    storage.set(keypair, {
+        format: FORMAT,
+        path: aboutPath,
+        content: 'Bird, the example author',
+    });
 }
 
 //================================================================================
@@ -234,7 +228,7 @@ let pathsAndContents = (storage : IStorage) : string =>
         <details class="indent">
             <summary>...</summary>
             ${
-                storage.documents({ path: doc.path, includeHistory: true, }).map((historyDoc, ii) => {
+                storage.documents({ path: doc.path, history: 'all', }).map((historyDoc, ii) => {
                     let outlineClass = ii === 0 ? 'outlined' : ''
                     return `<pre class="small ${outlineClass}">${JSON.stringify(historyDoc, null, 2)}</pre>`
                 }).join('\n')
@@ -385,7 +379,7 @@ export let makeExpressApp = (opts : PubOpts) => {
         let workspace = req.params.workspace;
         let storage = obtainStorage(workspace, false, opts);
         if (storage === undefined) { res.sendStatus(404); return; };
-        res.json(storage.documents({ includeHistory: true }));
+        res.json(storage.documents({ history: 'all' }));
     });
 
     app.post('/earthstar-api/v1/:workspace/documents', express.json({type: '*/*'}), (req, res) => {
@@ -397,7 +391,7 @@ export let makeExpressApp = (opts : PubOpts) => {
         let docs : Document[] = req.body;
         let numIngested = 0;
         for (let doc of docs) {
-            if (storage.ingestDocument(doc) === WriteResult.Accepted) { numIngested += 1 }
+            if (storage.ingestDocument(doc, 'TODO: sessionid') === WriteResult.Accepted) { numIngested += 1 }
         }
         res.json({
             numIngested: numIngested,
