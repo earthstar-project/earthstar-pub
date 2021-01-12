@@ -33,6 +33,10 @@ Or start a new Glitch project from scratch:
 * Rename your project, at the top left
 * Click "🕶 Show > In a New Window" to visit your pub
 
+On Glitch, the sqlite data is stored in a special hidden directory (maybe called `/.data`, I don't remember) which nobody can see or clone from your project.  Files in that directory persist even when Glitch restarts your app.
+
+If the pub is running just in memory-storage mode, it will forget all the data when Glitch restarts it (which happens often).
+
 ## Easy command-line install
 
 Install
