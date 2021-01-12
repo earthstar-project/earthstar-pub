@@ -2,19 +2,15 @@
 
 Hosts and syncs [Earthstar](https://github.com/cinnamon-bun/earthstar) workspaces over HTTP.  One pub server can hold multiple Earthstar workspaces.
 
+Data is stored in an SQLite file.  You can also just keep data in memory if you don't have a persistent filesystem on your server, but it will be lost when the server restarts... and then sync'd again from the clients. :)
+
 You can
 * View the data through a web interface
-* Sync your local files to/from the server using [earthstar-cli](https://github.com/cinnamon-bun/earthstar-cli/)
+* Sync your local data to/from the server using [earthstar-cli](https://github.com/cinnamon-bun/earthstar-cli/)
+* Sync to Earthstar web apps such as Twodays-Crossing, Earthstar-Foyer, Earthstar-Lobby, etc.
 
-Pub servers don't sync directly to each other (yet?).
+Pub servers don't sync directly to each other (yet?) and clients don't sync directly to each other (yet).  Only Pub<-->Client connections are made.  But each client can talk to several pubs, and it decides which pubs it wants to push its workspaces to.
 
-## Caveats
-
-This is for demonstration purposes, so it shows all the workspaces and data over the web.  Normally Earthstar pubs should not reveal which workspaces they hold.
-
-It stores data in memory, not on disk, so it will forget everything if restarted.  Note that glitch.com restarts projects often.
-
-There's an [issue](https://github.com/earthstar-project/earthstar-pub/issues/1) describing how to store data in SQLite for persistence.
 
 ## Demo
 
