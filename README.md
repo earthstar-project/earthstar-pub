@@ -88,6 +88,10 @@ Options:
                         (default: "0")
 ```
 
+## Run on a Raspberry Pi
+
+See [this wiki page](https://github.com/earthstar-project/earthstar-pub/wiki/Earthstar-Pub-on-a-Raspberry-Pi)
+
 ## Developing
 
 Clone and install
