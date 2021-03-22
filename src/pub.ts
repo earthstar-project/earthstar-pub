@@ -53,8 +53,9 @@ let safe = (str : string) =>
         '"': '&quot;'
     } as any)[tag]));
 
-let htmlHeaderAndFooter = (page : string) : string => 
-    `<html>
+let wrapInHtmlHeaderAndFooter = (page : string) : string => 
+    `<!DOCTYPE html>
+    <html>
     <head>
         <title>🌎⭐️🗃 Earthstar Pub</title>
         <meta charset="utf-8">
@@ -143,13 +144,39 @@ let htmlHeaderAndFooter = (page : string) : string =>
                 line-height: 21px;
                 font-size: 16px;
             }
+            .verticalMiddle {
+                vertical-align: middle;
+            }
+            .infoBox {
+                display: inline-block;
+                padding: 0px var(--s0);
+                background: var(--cGray90);
+                border: 2px solid var(--cGrayShadow);
+                border-radius: var(--round);
+            }
         </style>
     <body>
         ${page}
     </body>
     </html>`
 
-let listOfWorkspaces = (workspaces : string[], discoverableWorkspaces : boolean) : string => {
+let aboutBadge = (title: string | undefined, notes: string | undefined): string => {
+    let titleElem = (title === undefined || title === '')
+        ? ''
+        : `<h2>${title}</h2>`;
+    let notesElem = (notes === undefined || notes === '')
+        ? ''
+        : `<p>${notes}</p>`;
+    if (titleElem + notesElem === '') { return ''; }
+    return `
+        <div class="infoBox verticalMiddle">
+            ${titleElem}
+            ${notesElem}
+        </div>
+    `;
+}
+
+let listOfWorkspaces = (workspaces: string[], discoverableWorkspaces: boolean, title: string | undefined, notes: string | undefined): string => {
     let workspaceSection = `
         <p>This is a pub server hosting <b>${workspaces.length}</b> unlisted workspaces.</p>
         <p>If you know the workspace address, you can manually craft an URL to visit it:</p>
@@ -172,8 +199,15 @@ let listOfWorkspaces = (workspaces : string[], discoverableWorkspaces : boolean)
             </ul>
         `;
     }
-    return htmlHeaderAndFooter(
-        `<p><img src="/static/img/earthstar-logo-only.png" alt="earthstar logo" width=127 height=129 /></p>
+    return wrapInHtmlHeaderAndFooter(
+        `<div class="logoAndInfoBox">
+            <img src="/static/img/earthstar-logo-only.png"
+                class="verticalMiddle"
+                alt="earthstar logo"
+                width=127 height=129
+                />
+            ${aboutBadge(title, notes)}
+        </div>
         <h1>🗃 Earthstar Pub</h1>
         ${workspaceSection}
         <hr/>
@@ -187,7 +221,7 @@ let listOfWorkspaces = (workspaces : string[], discoverableWorkspaces : boolean)
 }
 
 let workspaceDetails = (storage : IStorage) : string =>
-    htmlHeaderAndFooter(
+    wrapInHtmlHeaderAndFooter(
         `<p><a href="/">&larr; Home</a></p>
         <h2>📂 Workspace: <code class="cWorkspace">${safe(storage.workspace)}</code></h2>
         <p>
@@ -240,13 +274,15 @@ let pathsAndContents = (storage : IStorage) : string =>
 // EXPRESS SERVER
 
 export interface PubOpts {
-    port : number,
-    readonly : boolean,
-    allowPushToNewWorkspaces : boolean,
-    discoverableWorkspaces : boolean,
-    storageType : 'sqlite' | 'memory',
-    dataFolder? : string,  // only needed for sqlite
-    logLevel? : number,  // 0 none, 1 basic, 2 verbose, 3 sensitive
+    port: number,
+    readonly: boolean,
+    allowPushToNewWorkspaces: boolean,
+    discoverableWorkspaces: boolean,
+    storageType: 'sqlite' | 'memory',
+    dataFolder?: string,  // only needed for sqlite
+    logLevel?: number,  // 0 none, 1 basic, 2 verbose, 3 sensitive
+    title?: string, // title of the pub, to show on the homepage
+    notes?: string, // longer notes about the pub, to show on the homepage
 };
 
 let workspaceToFilename = (dataFolder: string, workspace: WorkspaceAddress) =>
@@ -358,7 +394,7 @@ export let makeExpressApp = (opts : PubOpts) => {
         logVerbose('/');
         let workspaces = Object.keys(workspaceToStorage);
         workspaces.sort();
-        res.send(listOfWorkspaces(workspaces, opts.discoverableWorkspaces));
+        res.send(listOfWorkspaces(workspaces, opts.discoverableWorkspaces, opts.title, opts.notes));
     });
 
     app.get('/workspace/:workspace', (req, res) => {
