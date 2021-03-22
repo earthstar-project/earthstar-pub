@@ -31,8 +31,6 @@ let setUpDemoStorage = (storage : IStorage) => {
         address: "@bird.btr46n7ij6eq6hwnpvfcdakxqy3e6vz4e5vmw33ur7tjey5dkx6ea",
         secret: "bcrmyrih74d5mpvaco3tjrawgzebnmzyqdxvxnvg2hvnsfdj3izga"
     }
-    let author = keypair.address;
-
     let aboutPath = `/about/~${keypair.address}/displayName.txt`;
     storage.set(keypair, {
         format: FORMAT,
@@ -252,7 +250,9 @@ export interface PubOpts {
 };
 
 let workspaceToFilename = (dataFolder: string, workspace: WorkspaceAddress) =>
+    // removes '+'
     path.join(dataFolder || '.', workspace.slice(1) + '.sqlite');
+
 let filenameToWorkspace = (filename: string) => {
     if (filename.endsWith('.sqlite')) {
         filename = filename.slice(0, -7);
@@ -313,7 +313,7 @@ export let makeExpressApp = (opts : PubOpts) => {
                     return undefined;
                 }
                 // build filename
-                let filename = path.join(opts.dataFolder || '.', workspace.slice(1) + '.sqlite');  // remove '+'
+                let filename = workspaceToFilename(opts.dataFolder || '.', workspace);
                 logSensitive('    sqlite filename:', filename);
                 storage = new StorageSqlite({
                     mode: 'create-or-open',
@@ -351,13 +351,16 @@ export let makeExpressApp = (opts : PubOpts) => {
     let publicDir = path.join(__dirname, '../public/static' );
     app.use('/static', express.static(publicDir));
 
-    // for humans
+    //--------------------------------------------------
+    // routes for humans
+
     app.get('/', (req, res) => {
         logVerbose('/');
         let workspaces = Object.keys(workspaceToStorage);
         workspaces.sort();
         res.send(listOfWorkspaces(workspaces, opts.discoverableWorkspaces));
     });
+
     app.get('/workspace/:workspace', (req, res) => {
         logVerbose('workspace view');
         let workspace = req.params.workspace;
@@ -366,7 +369,10 @@ export let makeExpressApp = (opts : PubOpts) => {
         res.send(workspaceDetails(storage));
     });
 
-    // api
+    //--------------------------------------------------
+    // API
+
+    // list paths
     app.get('/earthstar-api/v1/:workspace/paths', (req, res) => {
         logVerbose('giving paths');
         let workspace = req.params.workspace;
@@ -374,6 +380,8 @@ export let makeExpressApp = (opts : PubOpts) => {
         if (storage === undefined) { res.sendStatus(404); return; };
         res.json(storage.paths());
     });
+
+    // get all documents
     app.get('/earthstar-api/v1/:workspace/documents', (req, res) => {
         logVerbose('giving documents');
         let workspace = req.params.workspace;
@@ -382,6 +390,7 @@ export let makeExpressApp = (opts : PubOpts) => {
         res.json(storage.documents({ history: 'all' }));
     });
 
+    // ingest documents (uploaded from client)
     app.post('/earthstar-api/v1/:workspace/documents', express.json({type: '*/*'}), (req, res) => {
         logVerbose('ingesting documents');
         if (opts.readonly) { res.sendStatus(403); return; }
@@ -409,6 +418,7 @@ export let makeExpressApp = (opts : PubOpts) => {
         delete workspaceToStorage[workspace];
         res.redirect('/');
     });
+
     // quick hack to restore the demo workspace
     app.post('/demo-hack/create-demo-workspace', (req, res) => {
         logVerbose('creating demo workspace');
@@ -420,6 +430,7 @@ export let makeExpressApp = (opts : PubOpts) => {
         res.redirect('/');
     });
 
+    // live stream from server to client
     app.get('/earthstar-api/v1/:workspace/stream', (req, res) => {
         // Create a stream of server-sent events for the new write events in a workspace.
         // Return a stream of all newly occurring documents (encoded as JSON).
