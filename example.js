@@ -16,6 +16,10 @@ pub.serve({
     storageType: 'sqlite',  // use sqlite instead of memory to store data
     dataFolder: '.data',  // put sqlite files here
     logLevel: 2,  // 2 = verbose, 3 = include sensitive info (workspace addresses)
+
+    // customize your pub homepage with an infobox:
+    //title: 'My pub',
+    //notes: 'Run by me',
 });
 
 console.log(`earthstar-pub is running on port ${port}.  ${new Date()}`);
