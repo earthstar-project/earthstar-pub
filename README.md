@@ -86,6 +86,10 @@ Options:
                       Show this many logs. 0 = none, 1 = basic, 2 = verbose,
                         3 = include sensitive information (workspace addresses).
                         (default: "0")
+
+  -t, --title <title> A title for your pub, shown on the main page
+
+  -n, --notes <notes> Longer notes about your pub, shown on the main page
 ```
 
 ## Run on a Raspberry Pi
