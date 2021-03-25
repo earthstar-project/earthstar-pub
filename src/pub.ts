@@ -434,9 +434,10 @@ export let makeExpressApp = (opts : PubOpts) => {
         let storage = obtainStorage(workspace, opts.allowPushToNewWorkspaces, opts);
         if (storage === undefined) { res.sendStatus(404); return; };
         let docs : Document[] = req.body;
+        if (!Array.isArray(docs)) { res.sendStatus(400); return; }
         let numIngested = 0;
         for (let doc of docs) {
-            if (storage.ingestDocument(doc, 'TODO: sessionid') === WriteResult.Accepted) { numIngested += 1 }
+            if (storage.ingestDocument(doc, 'TODO: sessionid') === WriteResult.Accepted) { numIngested += 1; }
         }
         res.json({
             numIngested: numIngested,
