@@ -14,15 +14,17 @@ Pub servers don't sync directly to each other (yet?) and clients don't sync dire
 
 ## Demo
 
-https://earthstar-demo-pub-v5-a.glitch.me/
+https://earthstar-demo-pub-v6-a.glitch.me/
 
 ![](img/pub-homepage.png)
 
 ![](img/pub-workspace.png)
 
-## Running on Glitch
+# How to deploy
 
-Make your own copy on Glitch by going [here](https://glitch.com/~earthstar-demo-pub-v5-a) and clicking "Remix this".
+## Run on Glitch.com
+
+Make your own copy on Glitch by going [here](https://glitch.com/~earthstar-demo-pub-v6-a) and clicking "Remix this".
 
 Or start a new Glitch project from scratch:
 
@@ -37,7 +39,7 @@ On Glitch, the sqlite data is stored in a special hidden directory (maybe called
 
 If the pub is running just in memory-storage mode, it will forget all the data when Glitch restarts it (which happens often).
 
-## Easy command-line install
+## Easy command-line install on your local machine
 
 Install
 ```
@@ -96,7 +98,41 @@ Options:
 
 See [this wiki page](https://github.com/earthstar-project/earthstar-pub/wiki/Earthstar-Pub-on-a-Raspberry-Pi)
 
-## Developing
+## Run on fly.io
+
+[Fly.io](https://fly.io/) is an easy way to run Node apps and Dockerfiles.  They have a free tier.  You get a subdomain with SSL and you can add a persistent filesystem for $0.15/gb/month.
+
+A test pub is running on Fly:
+<a href="https://earthstar-demo-pub-6.fly.dev/">`https://earthstar-demo-pub-6.fly.dev/`</a>
+
+Follow the [default setup steps for a Node app](https://fly.io/docs/getting-started/node/) but you need to change the app name to something you like, and change all ports `8080` to `3333` in the config file since that's our default port.
+
+Get a local copy of this repo:
+* `git clone git@github.com:earthstar-project/earthstar-pub.git`
+* `cd earthstar-pub`
+* `npm install; npm build`
+
+Deploy on Fly:
+* [Install the `flyctl` command line tool](https://fly.io/docs/getting-started/installing-flyctl/)
+* Make an account:
+  * `flyctl auth signup`
+  * Check your email and click the link there to get into the [Fly dashboard](https://fly.io/apps).
+* Prepare for deployment - this figures out that you have a Node app and makes a config file.
+  * `flyctl launch --name my-cool-earthstar-pub`
+  * don't actually deploy it yet
+  * edit `fly.toml` and change all port `8080` to `3333`
+* Actually deploy it.  This builds a Docker image which takes a minute; `--remote-only` makes it build the Docker image on their server instead of requiring you to have Docker installed on your own machine.
+  * `flyctl deploy --remote-only`
+* See info about your site
+  * `flyctl status`
+* See logs from your site
+  * `flyctl logs`
+* Launch your browser
+  * `flyctl open`
+
+TODO: how to customize your pub using the `title` and `notes` field in [example.js](https://github.com/earthstar-project/earthstar-pub/blob/master/example.js).  Right now we're running the code using `npm run start` which uses all the default command line options; I'm not yet sure how to change the command line that runs.  We might have to make our own Dockerfile.
+
+# Developing
 
 Clone and install
 ```

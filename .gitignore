@@ -6,3 +6,5 @@ build/
 .nyc_output/
 coverage/
 sqlite/
+fly.toml
+Dockerfile.no
