@@ -103,7 +103,7 @@ See [this wiki page](https://github.com/earthstar-project/earthstar-pub/wiki/Ear
 [Fly.io](https://fly.io/) is an easy way to run Node apps and Dockerfiles.  They have a free tier.  You get a subdomain with SSL and you can add a persistent filesystem for $0.15/gb/month.
 
 A test pub is running on Fly:
-<a href="https://earthstar-demo-pub-6.fly.dev/">`https://earthstar-demo-pub-6.fly.dev/`</a>
+<a href="https://earthstar-demo-pub-6b.fly.dev/">`https://earthstar-demo-pub-6b.fly.dev/`</a>
 
 Follow the [default setup steps for a Node app](https://fly.io/docs/getting-started/node/) but you need to change the app name to something you like, and change all ports `8080` to `3333` in the config file since that's our default port.
 
@@ -129,6 +129,10 @@ Deploy on Fly:
   * `flyctl logs`
 * Launch your browser
   * `flyctl open`
+
+Don't try to "suspend" or "resume" your site, that seems to break Fly.io.  Also it seems to fail if you delete a site and make a new one with the same name.
+
+This isn't set up with a persistant volume for storing data, but the data seems to last "long enough" to be useful as a pub.  Fly.io doesn't shut down your server during periods of inactivity so your data will last a while, and even if it gets wiped it will be re-populated with data synced up from browser clients.
 
 TODO: how to customize your pub using the `title` and `notes` field in [example.js](https://github.com/earthstar-project/earthstar-pub/blob/master/example.js).  Right now we're running the code using `npm run start` which uses all the default command line options; I'm not yet sure how to change the command line that runs.  We might have to make our own Dockerfile.
 
