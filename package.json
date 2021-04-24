@@ -1,6 +1,6 @@
 {
   "name": "earthstar-pub",
-  "version": "6.0.4",
+  "version": "6.0.5",
   "description": "Host Earthstar workspaces via HTTP",
   "engines": {
     "node": "12.x"
