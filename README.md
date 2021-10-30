@@ -1,5 +1,7 @@
 # Earthstar Pub
 
+> Note: we are probably renaming places where workspaces are stored from "storages" to "pockets".  Pubs will be renamed to "cloud pocket servers".
+
 Hosts and syncs [Earthstar](https://github.com/cinnamon-bun/earthstar) workspaces over HTTP.  One pub server can hold multiple Earthstar workspaces.
 
 Data is stored in an SQLite file.  You can also just keep data in memory if you don't have a persistent filesystem on your server, but it will be lost when the server restarts... and then sync'd again from the clients. :)
