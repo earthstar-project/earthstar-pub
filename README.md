@@ -1,3 +1,5 @@
+> # Outdated: for running a web-connected earthstar peer, see [replica server](https://github.com/earthstar-project/replica-server)
+
 # Earthstar Pub
 
 > Note: we are probably renaming places where workspaces are stored from "storages" to "pockets".  Pubs will be renamed to "cloud pocket servers".
